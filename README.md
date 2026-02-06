@@ -57,20 +57,17 @@ DISCORD_CHANNEL_ID=channel_id_für_reports
 # Hell Let Loose Server 1 (CRCON API)
 SERVER1_NAME=Server 1
 SERVER1_API_URL=https://gbg-hll.com:64301
-SERVER1_USERNAME=dein_crcon_username
-SERVER1_PASSWORD=dein_crcon_password
+SERVER1_API_TOKEN=your_crcon_api_token
 
 # Hell Let Loose Server 2 (CRCON API)
 SERVER2_NAME=Server 2
 SERVER2_API_URL=https://gbg-hll.com:64302
-SERVER2_USERNAME=dein_crcon_username
-SERVER2_PASSWORD=dein_crcon_password
+SERVER2_API_TOKEN=your_crcon_api_token
 
 # Hell Let Loose Server 3 (CRCON API)
 SERVER3_NAME=Server 3
 SERVER3_API_URL=https://gbg-hll.com:64303
-SERVER3_USERNAME=dein_crcon_username
-SERVER3_PASSWORD=dein_crcon_password
+SERVER3_API_TOKEN=your_crcon_api_token
 
 # Detection Settings
 MAX_LEVEL_TO_TRACK=100
@@ -107,16 +104,20 @@ Das System verwendet **CRCON Blacklists** statt direkter Bans:
 ### CRCON API Zugang einrichten:
 
 1. Du brauchst Zugang zu einer CRCON Installation für deine HLL Server
-2. Erstelle einen API User mit den benötigten Permissions:
-   - `api.can_view_get_players`
-   - `api.can_view_live_scoreboard`
-   - `api.can_view_gamestate`
-   - `api.can_add_blacklist_records` (für Bans)
-   - `api.can_view_blacklists`
-   - `api.can_kick_players`
+2. Erstelle einen **API Token** in CRCON:
+   - Gehe zu Settings → API Access
+   - Erstelle einen neuen API Token
+   - Wähle die benötigten Permissions:
+     * `api.can_view_get_players`
+     * `api.can_view_live_scoreboard`
+     * `api.can_view_gamestate`
+     * `api.can_add_blacklist_records` (für Bans)
+     * `api.can_view_blacklists`
+     * `api.can_kick_players`
+   - Kopiere den generierten Token
 
 3. Richte eine Blacklist ein (oder nutze die Default Blacklist ID 1)
-4. Trage die API URL, Credentials und Blacklist ID in die `.env` ein
+4. Trage die API URL, den API Token und Blacklist ID in die `.env` ein
 
 ### API Endpoints die verwendet werden:
 
@@ -300,8 +301,8 @@ UNKNOWN: 10
 ### CRCON API Verbindung schlägt fehl
 
 1. Teste API URL im Browser: `https://your-crcon-url:64301`
-2. Prüfe Username und Password
-3. Verifiziere dass der User die nötigen API Permissions hat
+2. Prüfe API Token (nicht abgelaufen?)
+3. Verifiziere dass der Token die nötigen API Permissions hat
 4. Bei Self-Signed Certificates: SSL-Fehler sind normal (werden ignoriert)
 tail -f logs/out.log
 tail -f logs/error.log

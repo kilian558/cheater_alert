@@ -42,11 +42,10 @@ class HLLAntiCheatMonitor {
         for (let i = 1; i <= 3; i++) {
             const name = process.env[`SERVER${i}_NAME`];
             const apiUrl = process.env[`SERVER${i}_API_URL`];
-            const username = process.env[`SERVER${i}_USERNAME`];
-            const password = process.env[`SERVER${i}_PASSWORD`];
+            const apiToken = process.env[`SERVER${i}_API_TOKEN`];
 
-            if (name && apiUrl && username && password) {
-                const client = new CRCONApiClient(name, apiUrl, username, password);
+            if (name && apiUrl && apiToken) {
+                const client = new CRCONApiClient(name, apiUrl, apiToken);
                 this.servers.push(client);
                 console.log(`Server ${i} konfiguriert: ${name} (${apiUrl})`);
             }
@@ -54,7 +53,7 @@ class HLLAntiCheatMonitor {
 
         if (this.servers.length === 0) {
             console.error('FEHLER: Keine Server konfiguriert! Bitte .env Datei prüfen.');
-            console.error('Benötigt: SERVER1_NAME, SERVER1_API_URL, SERVER1_USERNAME, SERVER1_PASSWORD');
+            console.error('Benötigt: SERVER1_NAME, SERVER1_API_URL, SERVER1_API_TOKEN');
             process.exit(1);
         }
     }

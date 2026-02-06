@@ -16,14 +16,13 @@ nano .env
 Fülle mindestens aus:
 - `DISCORD_TOKEN` - Dein Discord Bot Token
 - `DISCORD_CHANNEL_ID` - Channel ID für Reports
-- `SERVER1_NAME`, `SERVER1_API_URL`, `SERVER1_USERNAME`, `SERVER1_PASSWORD`
+- `SERVER1_NAME`, `SERVER1_API_URL`, `SERVER1_API_TOKEN`
 
 **Beispiel für CRCON API:**
 ```env
 SERVER1_NAME=German Battleground 1
 SERVER1_API_URL=https://gbg-hll.com:64301
-SERVER1_USERNAME=admin
-SERVER1_PASSWORD=your_password
+SERVER1_API_TOKEN=dein_crcon_api_token
 ```
 
 ### 3. Bot starten

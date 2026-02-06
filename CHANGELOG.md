@@ -1,5 +1,53 @@
 # Hell Let Loose Anti-Cheat Monitor - CHANGELOG
 
+## Version 2.2.0 - API Token Authentication
+
+### 🔐 Breaking Changes
+
+- **API Token statt Username/Passwort**
+  - Verwendet jetzt Bearer Token Authentifizierung  
+  - Sicherer als Basic Auth mit Username/Passwort
+  - `.env` Variablen geändert: `SERVER*_USERNAME` und `SERVER*_PASSWORD` → `SERVER*_API_TOKEN`
+
+### ✨ Configuration Changes
+
+- **Neue .env Variablen:**
+  - `SERVER1_API_TOKEN` (vorher: SERVER1_USERNAME + SERVER1_PASSWORD)
+  - `SERVER2_API_TOKEN` (vorher: SERVER2_USERNAME + SERVER2_PASSWORD)
+  - `SERVER3_API_TOKEN` (vorher: SERVER3_USERNAME + SERVER3_PASSWORD)
+
+### 🛠️ Technical Changes
+
+- `CRCONApiClient` constructor: Verwendet jetzt `apiToken` statt `username` + `password`
+- HTTP Header: `Authorization: Bearer TOKEN` statt `Basic Auth`
+- Kein Login-Endpoint mehr nötig
+- Vereinfachte Verbindungslogik
+
+### 📝 Documentation Updates
+
+- README.md: Token-Generierung in CRCON erklärt
+- CRCON-SETUP.md: API Token Erstellung dokumentiert
+- QUICKSTART.md: Beispiele aktualisiert
+- test-crcon-api.js: Verwendet Bearer Token
+
+### ⚠️ Migration Guide
+
+Wenn du von v2.1.0 updatest:
+
+1. Generiere API Token in CRCON (Settings → API Access)
+2. Aktualisiere `.env`:
+   ```bash
+   # Alt:
+   SERVER1_USERNAME=admin
+   SERVER1_PASSWORD=password123
+   
+   # Neu:
+   SERVER1_API_TOKEN=your_generated_token_here
+   ```
+3. Restart: `pm2 restart hll-anticheat-monitor`
+
+---
+
 ## Version 2.1.0 - Blacklist System
 
 ### 🚀 Major Changes

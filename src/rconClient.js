@@ -1,24 +1,18 @@
 const https = require('https');
 
 class CRCONApiClient {
-    constructor(name, apiUrl, username, password) {
+    constructor(name, apiUrl, apiToken) {
         this.name = name;
         this.apiUrl = apiUrl.replace(/\/$/, ''); // Remove trailing slash
-        this.username = username;
-        this.password = password;
-        this.sessionId = null;
+        this.apiToken = apiToken;
         this.connected = false;
     }
 
     async connect() {
         try {
-            // Login to CRCON API
-            const loginData = await this.request('/api/login', 'POST', {
-                username: this.username,
-                password: this.password
-            });
-
-            if (loginData) {
+            // Test connection with a simple API call
+            const gameState = await this.getGameState();
+            if (gameState) {
                 this.connected = true;
                 console.log(`[${this.name}] CRCON API verbunden`);
                 return true;
@@ -37,17 +31,12 @@ class CRCONApiClient {
             const options = {
                 method: method,
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.apiToken}`
                 },
                 // Disable SSL verification for self-signed certificates
                 rejectUnauthorized: false
             };
-
-            // Add basic auth
-            if (this.username && this.password) {
-                const auth = Buffer.from(`${this.username}:${this.password}`).toString('base64');
-                options.headers['Authorization'] = `Basic ${auth}`;
-            }
 
             const req = https.request(url, options, (res) => {
                 let body = '';

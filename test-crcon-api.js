@@ -25,7 +25,7 @@ function log(message, color = 'reset') {
     console.log(`${colors[color]}${message}${colors.reset}`);
 }
 
-async function testCRCONServer(name, apiUrl, username, password) {
+async function testCRCONServer(name, apiUrl, apiToken) {
     log(`\n${'='.repeat(60)}`, 'cyan');
     log(`Testing: ${name}`, 'cyan');
     log(`URL: ${apiUrl}`, 'cyan');
@@ -44,7 +44,7 @@ async function testCRCONServer(name, apiUrl, username, password) {
         try {
             log(`\n🔍 Testing ${test.name}...`, 'yellow');
             
-            const result = await makeRequest(apiUrl, test.endpoint, username, password);
+            const result = await makeRequest(apiUrl, test.endpoint, apiToken);
             
             if (result) {
                 log(`✅ ${test.name}: SUCCESS`, 'green');
@@ -87,23 +87,18 @@ async function testCRCONServer(name, apiUrl, username, password) {
     return successCount === tests.length;
 }
 
-function makeRequest(apiUrl, endpoint, username, password) {
+function makeRequest(apiUrl, endpoint, apiToken) {
     return new Promise((resolve, reject) => {
         const url = new URL(endpoint, apiUrl);
         
         const options = {
             method: 'GET',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiToken}`
             },
             rejectUnauthorized: false // Ignore self-signed certs
         };
-
-        // Add basic auth
-        if (username && password) {
-            const auth = Buffer.from(`${username}:${password}`).toString('base64');
-            options.headers['Authorization'] = `Basic ${auth}`;
-        }
 
         const req = https.request(url, options, (res) => {
             let body = '';
@@ -158,11 +153,10 @@ async function main() {
     for (let i = 1; i <= 3; i++) {
         const name = process.env[`SERVER${i}_NAME`];
         const apiUrl = process.env[`SERVER${i}_API_URL`];
-        const username = process.env[`SERVER${i}_USERNAME`];
-        const password = process.env[`SERVER${i}_PASSWORD`];
+        const apiToken = process.env[`SERVER${i}_API_TOKEN`];
 
-        if (name && apiUrl && username && password) {
-            servers.push({ name, apiUrl, username, password });
+        if (name && apiUrl && apiToken) {
+            servers.push({ name, apiUrl, apiToken });
         }
     }
 
@@ -179,8 +173,7 @@ async function main() {
         const passed = await testCRCONServer(
             server.name,
             server.apiUrl,
-            server.username,
-            server.password
+            server.apiToken
         );
         Next steps:', 'green');
         log('1. Check your BLACKLIST_ID in .env (see blacklists above)', 'yellow');
@@ -199,8 +192,8 @@ async function main() {
         log('❌ SOME TESTS FAILED! Please check your configuration.', 'red');
         log('\nCommon issues:', 'yellow');
         log('• Wrong API URL (check https:// and port)', 'yellow');
-        log('• Wrong username or password', 'yellow');
-        log('• Missing API permissions for the user', 'yellow');
+        log('• Wrong or expired API token', 'yellow');
+        log('• Missing API permissions for the token', 'yellow');
         log('• Server is offline or unreachable', 'yellow');
     }
     log('='.repeat(60), 'cyan');

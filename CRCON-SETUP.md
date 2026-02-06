@@ -12,7 +12,7 @@ CRCON (Community RCON) ist eine moderne REST API für Hell Let Loose Server-Verw
 
 ## Benötigte CRCON Permissions
 
-Dein CRCON User braucht diese API Permissions:
+Dein CRCON API Token braucht diese Permissions:
 
 ```
 ✅ api.can_view_get_players
@@ -45,21 +45,29 @@ Für die gbg-hll.com Server:
 # Server 1
 SERVER1_NAME=German Battleground 1
 SERVER1_API_URL=https://gbg-hll.com:64301
-SERVER1_USERNAME=dein_username
-SERVER1_PASSWORD=dein_password
+SERVER1_API_TOKEN=dein_api_token_hier
 
 # Server 2
 SERVER2_NAME=German Battleground 2
 SERVER2_API_URL=https://gbg-hll.com:64302
-SERVER2_USERNAME=dein_username
-SERVER2_PASSWORD=dein_password
+SERVER2_API_TOKEN=dein_api_token_hier
 
 # Server 3
 SERVER3_NAME=German Battleground 3
 SERVER3_API_URL=https://gbg-hll.com:64303
-SERVER3_USERNAME=dein_username
-SERVER3_PASSWORD=dein_password
+SERVER3_API_TOKEN=dein_api_token_hier
 ```
+
+## API Token generieren
+
+**In CRCON:**
+
+1. Öffne CRCON Web Interface
+2. Gehe zu **Settings** → **API Access**
+3. Klicke **Generate New Token**
+4. Wähle die benötigten Permissions (siehe oben)
+5. **Wichtig**: Kopiere den Token sofort - er wird nur einmal angezeigt!
+6. Trage den Token in `.env` ein
 
 ## API Testen
 
@@ -70,7 +78,7 @@ Bevor du den Bot startest, teste die API Verbindung:
 node test-crcon-api.js
 
 # Oder manuell mit curl
-curl -u username:password https://gbg-hll.com:64301/api/get_gamestate
+curl -H "Authorization: Bearer YOUR_API_TOKEN" https://gbg-hll.com:64301/api/get_gamestate
 ```
 
 **Erfolgreiche Antwort:**
@@ -89,16 +97,17 @@ curl -u username:password https://gbg-hll.com:64301/api/get_gamestate
 }
 ```
 
-## CRCON User erstellen
+## CRCON API Token erstellen
 
 Falls du Admin-Zugang zu CRCON hast:
 
 1. Öffne CRCON Web Interface
-2. Gehe zu **Settings** → **Multiple Server Admin** → **Users**
-3. Klicke **Add User**
-4. Username und Password vergeben
+2. Gehe zu **Settings** → **API Access**
+3. Klicke **Generate New Token**
+4. Token-Name vergeben (z.B. "HLL Anti-Cheat Bot")
 5. **Wichtig**: Alle benötigten Permissions aktivieren (siehe oben)
-6. Speichern
+6. Token generieren und sofort kopieren!
+7. Trage den Token in `.env` ein
 
 ### Blacklist einrichten
 
