@@ -175,9 +175,7 @@ async function main() {
             server.apiUrl,
             server.apiToken
         );
-        Next steps:', 'green');
-        log('1. Check your BLACKLIST_ID in .env (see blacklists above)', 'yellow');
-        log('2. 
+        
         if (!passed) {
             allPassed = false;
         }
