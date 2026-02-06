@@ -1,0 +1,22 @@
+{
+  "name": "hll-anticheat-monitor",
+  "version": "1.0.0",
+  "description": "Hell Let Loose Anti-Cheat Monitoring System with Discord Integration",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node test-crcon-api.js"
+  },
+  "keywords": ["hell-let-loose", "hll", "rcon", "discord", "anticheat"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5",
+    "better-sqlite3": "^9.4.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
