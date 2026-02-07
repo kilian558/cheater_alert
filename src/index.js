@@ -21,7 +21,7 @@ class HLLAntiCheatMonitor {
             // Rollen-Filter
             excludeTankRoles: process.env.EXCLUDE_TANK_ROLES !== 'false',
             excludeArtilleryRoles: process.env.EXCLUDE_ARTILLERY_ROLES !== 'false',
-            excludedRoles: (process.env.EXCLUDED_ROLES || 'tankcommander,crewman,spotter')
+            excludedRoles: (process.env.EXCLUDED_ROLES || 'tankcommander,crewman,spotter,artillery')
                 .split(',')
                 .map(r => r.trim().toLowerCase())
                 .filter(r => r.length > 0),
@@ -195,6 +195,22 @@ class HLLAntiCheatMonitor {
                 if (previousGameState && previousGameState.mapId !== gameState.mapId) {
                     console.log(`[${server.name}] 🔄 Map-Wechsel erkannt: ${previousGameState.map} → ${gameState.map}`);
                     console.log(`[${server.name}] 🗑️ False Positive Liste für diesen Server zurückgesetzt`);
+                    
+                    // Update alle aktiven Alerts mit "Match beendet" Status
+                    for (const [key, reportData] of this.reportedPlayers.entries()) {
+                        if (key.endsWith(`_${server.name}`) && reportData.matchId === previousGameState.mapId) {
+                            const stats = this.tracker.getPlayerStats(key);
+                            if (stats) {
+                                console.log(`  📢 Finales Update für ${stats.playerName} - Match beendet`);
+                                await this.discord.updateSuspiciousPlayerAlert(
+                                    key, 
+                                    stats, 
+                                    previousGameState,
+                                    true // matchEnded = true
+                                );
+                            }
+                        }
+                    }
                     
                     // Entferne alle False Positive Markierungen für diesen Server
                     const keysToRemove = [];

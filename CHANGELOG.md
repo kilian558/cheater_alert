@@ -1,5 +1,41 @@
 # Hell Let Loose Anti-Cheat Monitor - CHANGELOG
 
+## Version 2.5.0 - Artillery Filter & Match End Notification
+
+### 🎯 Neue Features
+
+#### 1. Artillery Squad wird jetzt gefiltert
+- **Problem**: Artillery Observer (artilleryobserver) wurde nicht gefiltert
+- **Symptom**: Alerts für Artillery-Spieler mit natürlich hoher KPM
+- **Lösung**: EXCLUDED_ROLES erweitert um "artillery" (matched alle Artillery-Squad Rollen)
+- **Gefilterte Rollen jetzt**:
+  - tankcommander, crewman (Tank Squad)
+  - spotter (Recon Squad)  
+  - artillery (Artillery Squad: artilleryobserver, artilleryofficer, etc.)
+
+#### 2. "Match beendet" Status in Discord Embed
+- **Problem**: Unklarheit ob Alert noch aktuell ist nach Map-Wechsel
+- **Symptom**: User weiß nicht ob Spieler noch aktiv oder Match schon vorbei
+- **Lösung**: Bei Map-Wechsel wird Embed ein letztes Mal geupdatet:
+  - Title: "⏹️ [MATCH BEENDET]"
+  - Farbe: Grau (statt Rot/Orange/Gelb)
+  - Footer: "Match beendet - Spieler nicht mehr aktiv"
+  - Buttons: Entfernt (Ban/False Positive nicht mehr möglich)
+
+### 🔧 Technical Changes
+
+- `index.js`: Bei Map-Wechsel alle aktiven Alerts updaten mit matchEnded=true
+- `discordBot.js`: createSuspiciousPlayerEmbed() unterstützt matchEnded parameter
+- `discordBot.js`: updateSuspiciousPlayerAlert() entfernt Buttons bei Match-Ende
+- `.env.example`: EXCLUDED_ROLES erweitert und besser dokumentiert
+
+### ⚠️ Known Limitations
+
+- **Infantry mit verlassenen Tanks**: Werden NICHT gefiltert (Role = rifleman)
+- **Artillery Strafing Runs**: Officer/Commander mit Artillery Strikes - KPM nicht so hoch
+
+---
+
 ## Version 2.4.4 - Hotfix: Negative Deaths & Weapon Tracking
 
 ### 🐛 Bug Fixes

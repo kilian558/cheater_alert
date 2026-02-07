@@ -104,7 +104,11 @@ class DiscordBot {
                 }
             )
             .setTimestamp()
-            .setFooter({ text: 'HLL Anti-Cheat Monitor' });
+            .setFooter({ 
+                text: matchEnded 
+                    ? '⏹️ Match beendet - Spieler nicht mehr aktiv | HLL Anti-Cheat Monitor'
+                    : 'HLL Anti-Cheat Monitor' 
+            });
 
         // Waffen-Stats hinzufügen (aus CRCON Live Scoreboard)
         if (stats.weapons && Object.keys(stats.weapons).length > 0) {
@@ -176,7 +180,7 @@ class DiscordBot {
         }
     }
 
-    async updateSuspiciousPlayerAlert(key, stats, gameState) {
+    async updateSuspiciousPlayerAlert(key, stats, gameState, matchEnded = false) {
         try {
             const messageId = this.activeMessages.get(key);
             if (!messageId) return false;
@@ -184,12 +188,14 @@ class DiscordBot {
             const channel = await this.client.channels.fetch(this.channelId);
             const message = await channel.messages.fetch(messageId);
 
-            const embed = this.createSuspiciousPlayerEmbed(stats, gameState);
-            const buttons = this.createActionButtons(stats.steamId, stats.serverName);
+            const embed = this.createSuspiciousPlayerEmbed(stats, gameState, matchEnded);
+            const buttons = matchEnded 
+                ? [] // Entferne Buttons wenn Match beendet
+                : this.createActionButtons(stats.steamId, stats.serverName);
 
             await message.edit({
                 embeds: [embed],
-                components: [buttons]
+                components: matchEnded ? [] : [buttons] // Keine Buttons wenn Match beendet
             });
 
             return true;
