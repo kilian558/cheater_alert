@@ -132,18 +132,10 @@ class PlayerTracker {
 
         const now = Date.now();
         
-        // CRCON v11+: Verwende API playtime wenn verfügbar, sonst Session-Zeit
-        let playtimeMinutes;
-        let useApiData = false;
-        if (session.apiPlaytimeSeconds && session.apiPlaytimeSeconds > 0) {
-            // Verwende API-Spielzeit (in Sekunden -> Minuten)
-            playtimeMinutes = session.apiPlaytimeSeconds / 60;
-            useApiData = true;
-        } else {
-            // Fallback: Berechne Session-Zeit seit Bot-Start
-            const playtimeMs = now - session.startTime;
-            playtimeMinutes = playtimeMs / (1000 * 60);
-        }
+        // Verwende NUR Session-Zeit (seit Bot-Start / Match-Start)
+        // NICHT API playtime - das ist die GESAMTE Serverzeit, nicht nur aktuelle Match!
+        const playtimeMs = now - session.startTime;
+        const playtimeMinutes = playtimeMs / (1000 * 60);
         
         const sessionKills = session.currentKills - session.startKills;
         const sessionDeaths = session.currentDeaths - session.startDeaths;

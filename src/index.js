@@ -49,6 +49,9 @@ class HLLAntiCheatMonitor {
 
         // Bereits gemeldete Spieler (Track pro Tag)
         this.reportedPlayers = new Map(); // steamId_server -> { lastAlertDate: 'YYYY-MM-DD', matchId: 'mapId' }
+        
+        // Als False Positive markierte Spieler (werden nicht mehr geupdatet)
+        this.falsePositivePlayers = new Set(); // steamId_server
     }
 
     initServers() {
@@ -108,6 +111,10 @@ class HLLAntiCheatMonitor {
             this.tracker.markAsResolved(key, 'false_positive');
             this.discord.removeMessage(key);
             this.reportedPlayers.delete(key);
+            
+            // Markiere als False Positive - keine weiteren Updates
+            this.falsePositivePlayers.add(key);
+            console.log(`  🚫 ${steamId} als False Positive markiert - keine weiteren Alerts`);
         });
     }
 
@@ -179,9 +186,26 @@ class HLLAntiCheatMonitor {
         
         // Hole Game State (Map, Mode, etc.)
         let gameState = this.gameStates.get(server.name);
+        const previousGameState = gameState;
+        
         if (!gameState || Math.random() < 0.1) { // Nur gelegentlich updaten
             gameState = await server.getGameState();
             if (gameState) {
+                // Prüfe ob neue Map (Match Ende)
+                if (previousGameState && previousGameState.mapId !== gameState.mapId) {
+                    console.log(`[${server.name}] 🔄 Map-Wechsel erkannt: ${previousGameState.map} → ${gameState.map}`);
+                    console.log(`[${server.name}] 🗑️ False Positive Liste für diesen Server zurückgesetzt`);
+                    
+                    // Entferne alle False Positive Markierungen für diesen Server
+                    const keysToRemove = [];
+                    for (const key of this.falsePositivePlayers) {
+                        if (key.endsWith(`_${server.name}`)) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                    keysToRemove.forEach(key => this.falsePositivePlayers.delete(key));
+                }
+                
                 this.gameStates.set(server.name, gameState);
                 console.log(`[${server.name}] Map: ${gameState.map} | Modus: ${gameState.mode}`);
             }
@@ -266,6 +290,12 @@ class HLLAntiCheatMonitor {
         console.log(`     KPM: ${stats.overallKPM} (Schwelle: ${this.config.overallKPMThreshold}) | Rolling: ${stats.rollingKPM} (Schwelle: ${this.config.rollingKPMThreshold})`);
         console.log(`     Genug Daten: ${hasEnoughData ? '✅' : '❌'} | Verdächtig: ${kpmValue >= this.config.overallKPMThreshold || rollingKpmValue >= this.config.rollingKPMThreshold ? '✅' : '❌'}`);
         console.log(`     Role: ${stats.role || 'Unknown'}`);
+
+        // Prüfe ob als False Positive markiert
+        if (this.falsePositivePlayers.has(key)) {
+            // console.log(`  ⏩ ${stats.playerName} ist als False Positive markiert - überspringe`);
+            return;
+        }
 
         // Prüfe ob verdächtig
         if (this.tracker.isSuspicious(key, this.config)) {
