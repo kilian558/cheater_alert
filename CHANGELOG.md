@@ -1,5 +1,38 @@
 # Hell Let Loose Anti-Cheat Monitor - CHANGELOG
 
+## Version 2.4.4 - Hotfix: Negative Deaths & Weapon Tracking
+
+### 🐛 Bug Fixes
+
+#### 1. Negative Deaths behoben
+- **Problem**: CRCON API liefert inkonsistente Death-Werte (z.B. nach Team-Switch)
+- **Symptom**: Deaths zeigten negative Werte (z.B. -6)
+- **Fix**: `Math.max(0, sessionDeaths)` verhindert negative Werte
+
+#### 2. Weapon Stats zeigen jetzt Session-Kills
+- **Problem**: Weapons zeigten Total Match Kills (33), aber Session Kills nur 3
+- **Symptom**: Missverhältnis zwischen angezeigten Kills und Weapon-Kills
+- **Lösung**: Weapon-Baseline-Tracking - zählt nur neue Kills pro Waffe seit Session-Start
+- **Verhalten**: 
+  - Erstes Update: weaponBaseline = API weapons, session weapons = {}
+  - Weitere Updates: sessionWeapons = API weapons - baseline
+  - Match Reset: Baseline zurückgesetzt
+
+### 🔧 Technical Changes
+
+- `getPlayerStats()`: Deaths-Berechnung mit Math.max(0, ...) abgesichert
+- `updatePlayer()`: Weapon-Baseline-Tracking implementiert
+- `resetServerSessions()`: weaponBaseline wird zurückgesetzt
+
+### ⚠️ Known Limitations
+
+- **Role-Filter**: Kann Spieler nicht erkennen, die verlassene Tanks benutzen
+  - Rollen-Filter prüft auf "tankcommander", "crewman", "spotter"
+  - Wenn Infantry-Spieler einen Tank benutzt, ist Role z.B. "rifleman"
+  - Lösung: Weapon-basierter Filter wäre besser, aber komplex
+
+---
+
 ## Version 2.4.3 - True Zero Stats Reset
 
 ### 🎯 Änderungen

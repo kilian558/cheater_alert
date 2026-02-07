@@ -126,9 +126,24 @@ class PlayerTracker {
             session.apiPlaytimeSeconds = playerData.playtime;
         }
         
-        // Update weapons data from CRCON
+        // Weapon-Tracking: Zähle nur neue Kills pro Waffe (Session-basiert)
         if (playerData.weapons && Object.keys(playerData.weapons).length > 0) {
-            session.weapons = playerData.weapons;
+            // Initialisiere Session-Weapons wenn noch nicht vorhanden
+            if (!session.weaponBaseline) {
+                session.weaponBaseline = { ...playerData.weapons };
+                session.weapons = {}; // Session weapons starten bei 0
+            } else {
+                // Berechne Session-Kills pro Waffe
+                const sessionWeapons = {};
+                for (const [weapon, totalKills] of Object.entries(playerData.weapons)) {
+                    const baseline = session.weaponBaseline[weapon] || 0;
+                    const sessionKills = Math.max(0, totalKills - baseline);
+                    if (sessionKills > 0) {
+                        sessionWeapons[weapon] = sessionKills;
+                    }
+                }
+                session.weapons = sessionWeapons;
+            }
         }
         
         // Store additional CRCON stats
@@ -151,7 +166,9 @@ class PlayerTracker {
         const playtimeMinutes = playtimeMs / (1000 * 60);
         
         const sessionKills = session.currentKills - session.startKills;
-        const sessionDeaths = session.currentDeaths - session.startDeaths;
+        // Fix: CRCON API kann inkonsistente Death-Werte liefern (Team-Switch, etc.)
+        // Verhindere negative Deaths
+        const sessionDeaths = Math.max(0, session.currentDeaths - session.startDeaths);
 
         // Immer Session-Kills für KPM verwenden (nur aktuelles Game)
         const overallKPM = playtimeMinutes > 0 ? sessionKills / playtimeMinutes : 0;
@@ -263,6 +280,8 @@ class PlayerTracker {
                 session.startKills = session.currentKills; // Aktuelle Kills werden neue Baseline
                 session.startDeaths = session.currentDeaths; // Aktuelle Deaths werden neue Baseline
                 session.killHistory = []; // Leere Kill-History
+                session.weapons = {}; // Reset Session Weapons
+                session.weaponBaseline = null; // Reset Weapon Baseline für neues Match
                 session.isFirstUpdate = false; // Kein First Update mehr
                 resetCount++;
             }
