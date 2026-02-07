@@ -264,11 +264,18 @@ class CRCONApiClient {
             
             if (!state) return null;
 
+            // Verwende human_name wenn verfügbar, sonst formatiere die ID
+            const mapName = state.current_map?.human_name || 
+                           this.formatMapName(state.current_map?.id) || 
+                           'Unknown';
+
             return {
-                map: state.current_map?.human_name || state.current_map?.id || 'Unknown',
+                map: mapName,
                 mapId: state.current_map?.id || 'unknown',
                 mode: this.extractMode(state.current_map?.id),
-                nextMap: state.next_map?.human_name || state.next_map?.id || 'Unknown',
+                nextMap: state.next_map?.human_name || 
+                        this.formatMapName(state.next_map?.id) || 
+                        'Unknown',
                 alliedScore: state.allied_score || 0,
                 axisScore: state.axis_score || 0,
                 timeRemaining: state.time_remaining || '0:00:00',
@@ -282,6 +289,26 @@ class CRCONApiClient {
             console.error(`[${this.name}] Fehler beim Abrufen des Spielstatus:`, error.message);
             return null;
         }
+    }
+
+    formatMapName(mapId) {
+        if (!mapId) return null;
+        
+        // Entferne Mode-Suffix (_warfare, _offensive, etc.)
+        let name = mapId.replace(/_warfare|_offensive/gi, '');
+        
+        // Ersetze Underscores mit Leerzeichen
+        name = name.replace(/_/g, ' ');
+        
+        // Capitalize jedes Wort
+        name = name.split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+        
+        // Füge Mode hinzu
+        const mode = this.extractMode(mapId);
+        
+        return `${name} ${mode}`;
     }
 
     extractMode(mapId) {

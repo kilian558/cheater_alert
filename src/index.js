@@ -45,8 +45,8 @@ class HLLAntiCheatMonitor {
         // Game State Cache
         this.gameStates = new Map();
 
-        // Bereits gemeldete Spieler
-        this.reportedPlayers = new Set();
+        // Bereits gemeldete Spieler (Track pro Tag)
+        this.reportedPlayers = new Map(); // steamId_server -> { lastAlertDate: 'YYYY-MM-DD', matchId: 'mapId' }
     }
 
     initServers() {
@@ -260,20 +260,33 @@ class HLLAntiCheatMonitor {
 
         // Prüfe ob verdächtig
         if (this.tracker.isSuspicious(key, this.config)) {
-            // Wenn noch nicht gemeldet, sende neue Meldung
-            if (!this.reportedPlayers.has(key)) {
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+            const currentMapId = gameState?.mapId || 'unknown';
+            const reportData = this.reportedPlayers.get(key);
+            
+            // Prüfe ob bereits heute gemeldet ODER ob neue Map (Match Ende)
+            const shouldSendNewAlert = !reportData || 
+                                       reportData.lastAlertDate !== today || 
+                                       reportData.matchId !== currentMapId;
+            
+            if (shouldSendNewAlert) {
+                // Neuer Alert (neuer Tag oder neue Map)
                 console.log(`\n🚨🚨🚨 VERDÄCHTIGER SPIELER ERKANNT! 🚨🚨🚨`);
                 console.log(`   Name: ${stats.playerName} (${stats.steamId})`);
                 console.log(`   Server: ${serverName}`);
                 console.log(`   KPM: ${stats.overallKPM} | Rolling KPM: ${stats.rollingKPM}`);
-                console.log(`   Level: ${stats.level} | Session Kills: ${stats.sessionKills}`);
+                console.log(`   Level: ${stats.level} | Total Kills: ${stats.totalKills}`);
                 console.log(`   Spielzeit: ${stats.playtimeFormatted}`);
+                console.log(`   Grund: ${!reportData ? 'Erste Meldung' : reportData.lastAlertDate !== today ? 'Neuer Tag' : 'Neue Map'}`);
                 console.log(`🚨🚨🚨 Discord Alert wird gesendet! 🚨🚨🚨\n`);
                 
                 await this.discord.sendSuspiciousPlayerAlert(key, stats, gameState || { map: 'Unknown', mode: 'Warfare' });
-                this.reportedPlayers.add(key);
+                this.reportedPlayers.set(key, {
+                    lastAlertDate: today,
+                    matchId: currentMapId
+                });
             } else {
-                // Update existierende Meldung
+                // Update existierende Meldung (gleicher Tag & gleiche Map)
                 await this.discord.updateSuspiciousPlayerAlert(key, stats, gameState || { map: 'Unknown', mode: 'Warfare' });
             }
         }

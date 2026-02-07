@@ -45,7 +45,7 @@ class DiscordBot {
         const embed = new EmbedBuilder()
             .setColor(this.getColorByKPM(parseFloat(stats.overallKPM)))
             .setTitle('⚠️ CRCON Watch KillRate Alert')
-            .setDescription(`\`\`\`Current Match\n${gameState.map} ${gameState.mode}\`\`\``)
+            .setDescription(`\`\`\`Current Match\n${gameState.map}\`\`\``)
             .addFields(
                 { 
                     name: '🖥️ Server', 
@@ -69,7 +69,7 @@ class DiscordBot {
                 },
                 { 
                     name: '🎖️ Class', 
-                    value: `\`\`\`${stats.role}\`\`\``, 
+                    value: `\`\`\`${stats.role || 'Unknown'}\`\`\``, 
                     inline: true 
                 },
                 { 
@@ -79,7 +79,7 @@ class DiscordBot {
                 },
                 { 
                     name: '💀 Kills', 
-                    value: `\`\`\`${stats.sessionKills}\`\`\``, 
+                    value: `\`\`\`${stats.totalKills}\`\`\``, 
                     inline: true 
                 },
                 { 
@@ -94,7 +94,7 @@ class DiscordBot {
                 },
                 { 
                     name: '☠️ Deaths', 
-                    value: `\`\`\`${stats.sessionDeaths}\`\`\``, 
+                    value: `\`\`\`${stats.totalDeaths}\`\`\``, 
                     inline: true 
                 }
             )
