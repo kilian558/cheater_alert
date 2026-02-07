@@ -64,12 +64,13 @@ async function testLevelAndRoleInfo() {
     log('║       CRCON Level- & Rollen-Informationen Test              ║', 'cyan');
     log('╚══════════════════════════════════════════════════════════════╝', 'cyan');
 
-    // Lade Server-Konfiguration
+    // Lade Server-Konfiguration (unterstützt beide Formate)
     const servers = [];
     for (let i = 1; i <= 10; i++) {
-        const apiUrl = process.env[`CRCON_API_URL_${i}`];
-        const apiToken = process.env[`CRCON_API_TOKEN_${i}`];
-        const name = process.env[`CRCON_SERVER_NAME_${i}`] || `Server ${i}`;
+        // Unterstütze beide Formate: CRCON_API_URL_1 und SERVER1_API_URL
+        const apiUrl = process.env[`CRCON_API_URL_${i}`] || process.env[`SERVER${i}_API_URL`];
+        const apiToken = process.env[`CRCON_API_TOKEN_${i}`] || process.env[`SERVER${i}_API_TOKEN`];
+        const name = process.env[`CRCON_SERVER_NAME_${i}`] || process.env[`SERVER${i}_NAME`] || `Server ${i}`;
         
         if (apiUrl && apiToken) {
             servers.push({ name, apiUrl, apiToken });
