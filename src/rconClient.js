@@ -102,8 +102,8 @@ class CRCONApiClient {
             console.log(`[${this.name}] ${players.length} Spieler in Scoreboard gefunden`);
             
             if (players.length > 0) {
-                // Debug: Zeige erstes Spieler-Objekt zur Validierung
-                console.log(`[${this.name}] Beispiel-Spieler (1):`, JSON.stringify(players[0]).substring(0, 300));
+                // Debug: Zeige vollständiges erstes Spieler-Objekt zur Validierung
+                console.log(`[${this.name}] Beispiel-Spieler (vollständig):`, JSON.stringify(players[0], null, 2));
             }
 
             return players.map(player => ({
