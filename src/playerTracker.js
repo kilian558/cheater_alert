@@ -65,14 +65,16 @@ class PlayerTracker {
                 level: playerData.level,
                 startTime: Date.now(),
                 lastUpdate: Date.now(),
-                startKills: playerData.kills,
-                startDeaths: playerData.deaths,
-                currentKills: playerData.kills,
-                currentDeaths: playerData.deaths,
+                // Starte bei 0 - zähle nur neue Kills/Deaths ab jetzt
+                startKills: 0,
+                startDeaths: 0,
+                currentKills: 0,
+                currentDeaths: 0,
                 weapons: {},
                 role: playerData.role,
                 team: playerData.team,
-                killHistory: [] // Timestamps der Kills für genauere KPM Berechnung
+                killHistory: [], // Timestamps der Kills für genauere KPM Berechnung
+                isFirstUpdate: true // Flag für erstes Update
             };
 
             this.trackedPlayers.set(key, session);
@@ -91,19 +93,30 @@ class PlayerTracker {
         }
 
         const now = Date.now();
-        const newKills = playerData.kills - session.currentKills;
+        
+        // Beim ersten Update: Setze Baseline ohne historische Kills zu zählen
+        if (session.isFirstUpdate) {
+            session.startKills = playerData.kills;
+            session.currentKills = playerData.kills;
+            session.startDeaths = playerData.deaths;
+            session.currentDeaths = playerData.deaths;
+            session.isFirstUpdate = false;
+        } else {
+            // Normale Updates: Zähle nur neue Kills
+            const newKills = playerData.kills - session.currentKills;
 
-        // Füge Timestamps für neue Kills hinzu
-        for (let i = 0; i < newKills; i++) {
-            session.killHistory.push(now);
+            // Füge Timestamps für neue Kills hinzu
+            for (let i = 0; i < newKills; i++) {
+                session.killHistory.push(now);
+            }
+
+            // Entferne Kills älter als 5 Minuten für Rolling KPM
+            const fiveMinutesAgo = now - (5 * 60 * 1000);
+            session.killHistory = session.killHistory.filter(ts => ts > fiveMinutesAgo);
+
+            session.currentKills = playerData.kills;
+            session.currentDeaths = playerData.deaths;
         }
-
-        // Entferne Kills älter als 5 Minuten für Rolling KPM
-        const fiveMinutesAgo = now - (5 * 60 * 1000);
-        session.killHistory = session.killHistory.filter(ts => ts > fiveMinutesAgo);
-
-        session.currentKills = playerData.kills;
-        session.currentDeaths = playerData.deaths;
         session.lastUpdate = now;
         session.role = playerData.role;
         session.team = playerData.team;
@@ -244,12 +257,13 @@ class PlayerTracker {
         
         for (const [key, session] of this.trackedPlayers.entries()) {
             if (session.serverName === serverName) {
-                // Setze Session zurück (neues Match)
+                // Match-Reset: Setze Session zurück, behalte aktuelle Kills als neue Baseline
                 session.startTime = now;
                 session.lastUpdate = now;
-                session.startKills = session.currentKills;
-                session.startDeaths = session.currentDeaths;
+                session.startKills = session.currentKills; // Aktuelle Kills werden neue Baseline
+                session.startDeaths = session.currentDeaths; // Aktuelle Deaths werden neue Baseline
                 session.killHistory = []; // Leere Kill-History
+                session.isFirstUpdate = false; // Kein First Update mehr
                 resetCount++;
             }
         }

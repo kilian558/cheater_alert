@@ -1,5 +1,125 @@
 # Hell Let Loose Anti-Cheat Monitor - CHANGELOG
 
+## Version 2.4.3 - True Zero Stats Reset
+
+### 🎯 Änderungen
+
+#### Stats werden bei Script-Start und Match-Reset auf 0 gesetzt
+- **Vorher**: System nutzte Baseline-Subtraktion (showValue = currentKills - startKills)
+- **Nachher**: Stats sind tatsächlich auf 0 gesetzt, nicht nur kalkuliert
+- **Betroffen**: Session Kills, Session Deaths, alle Statistiken
+- **Verhalten**:
+  - Bei Script-Start: Alle Stats starten bei 0 (nicht bei aktuellen API-Werten)
+  - Bei Map-Wechsel: Alle Stats werden auf 0 zurückgesetzt (nicht Baseline verschoben)
+  - Nur neue Kills/Deaths ab Tracking-Start werden gezählt
+
+### 🔧 Technical Changes
+
+- `startTracking()`: Initialisiert mit 0 statt API-Werten + `isFirstUpdate` Flag
+- `updatePlayer()`: Erstes Update setzt Baseline ohne historische Kills zu zählen
+- `resetServerSessions()`: Verschiebt Baseline für True-Zero-Effekt bei Match-Reset
+
+---
+
+## Version 2.4.2 - Playtime Reset bei Map-Wechsel
+
+### 🎯 Änderungen
+
+#### Spielzeit wird bei Map-Wechsel zurückgesetzt
+- **Vorher**: Spielzeit lief über mehrere Maps weiter
+- **Nachher**: Spielzeit startet bei neuer Map wieder bei 0:00:00
+- **Methode**: `resetServerSessions()` in PlayerTracker
+
+### 🔧 Technical Changes
+
+- Neue Methode `playerTracker.resetServerSessions(serverName)`
+- Map-Wechsel-Erkennung ruft Reset-Methode auf
+- Resettet: `startTime`, `startKills`, `startDeaths`, `killHistory`
+
+---
+
+## Version 2.4.1 - False Positive Fix & Session Playtime
+
+### 🎯 Änderungen
+
+#### 1. False Positive Embeds werden nicht mehr geupdated
+- **Problem**: Embed wurde weiter aktualisiert nach "False Positive" Button-Click
+- **Lösung**: Tracking für als "False Positive" markierte Spieler wird gestoppt
+- **Verhalten**: Nach Button-Click keine weiteren Updates für diesen Spieler
+
+#### 2. Spielzeit zeigt NUR aktuelle Session
+- **Vorher**: Zeigte Gesamte Serverzeit des Spielers (z.B. 50:00:00)
+- **Nachher**: Zeigt nur Spielzeit seit Bot-Start / Match-Start (Session Zeit)
+- **Konsequenz**: Playtime ist jetzt konsistent mit Session Kills/Deaths
+
+### 🔧 Technical Changes
+
+- False Positive Tracking in `index.js` (Set-basiert)
+- Session-basierte Playtime-Berechnung in `getPlayerStats()`
+
+---
+
+## Version 2.4.0 - Separate KPM Thresholds & K/D Ratio
+
+### 🎯 Neue Features
+
+#### 1. Getrennte KPM Schwellwerte
+- **OVERALL_KPM_THRESHOLD=1.25**: KPM für die gesamte Session (seit Bot-Start)
+- **ROLLING_KPM_THRESHOLD=3.0**: KPM der letzten 5 Minuten (Killstreak-Erkennung)
+- **Beide müssen überschritten sein** für einen Alert
+- **Vorteil**: Erkennt Cheater mit anfangs normaler KPM aber plötzlichem Anstieg
+
+#### 2. K/D Ratio im Embed
+- Zeigt Kill/Death Verhältnis
+- Format: `2.50` (2.5 Kills pro Death)
+- Bei 0 Deaths: Zeigt nur Kills (z.B. `5.00`)
+
+#### 3. Session-Only Stats
+- **Alle Stats** nur für aktuelle Session (seit Bot-Start)
+- Nicht mehr Total Server Stats
+- Konsistent: Session Kills, Session Deaths, Session KPM, Session Playtime
+
+#### 4. Rollen-Anzeige korrigiert
+- Nutzt `/api/get_team_view` für korrekte Rollen
+- **Problem behoben**: "unknown" Rollen und Artillerie-Spieler wurden nicht gefiltert
+
+#### 5. Combat Score entfernt
+- War meist leer und nicht nützlich
+- Platz für wichtigere Stats
+
+### 🔧 Technical Changes
+
+- Separate KPM Berechnung: Overall (Session) vs Rolling (5min)
+- K/D Ratio Berechnung in `getPlayerStats()`
+- Combat Score aus Discord Embed entfernt
+
+---
+
+## Version 2.3.1 - Discord Embed Fixes & Daily Alert Limit
+
+### 🎯 Änderungen
+
+#### 1. Discord Embed Stats korrigiert
+- **Problem**: Zeigte Total Kills statt Session Kills
+- **Fix**: Nutzt jetzt `stats.sessionKills` und `stats.sessionDeaths`
+
+#### 2. Map Name formatiert
+- **Vorher**: "utah_beach_warfare"
+- **Nachher**: "Utah Beach Warfare" (pretty name)
+
+#### 3. Daily Alert Limit
+- **Pro Spieler nur 1 Alert pro Tag**
+- Verhindert Spam bei mehrfachen Detektionen
+- Embed wird weiterhin aktualisiert bis Match-Ende / Intervention
+
+### 🔧 Technical Changes
+
+- Alert-Tracking in `index.js` (Map mit Timestamps)
+- Pretty-Name Formatierung für Maps
+- Session-basierte Stats im Embed
+
+---
+
 ## Version 2.3.0 - Level & Rollen-Filter mit Caching
 
 ### 🎯 Neue Features
