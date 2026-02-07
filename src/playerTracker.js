@@ -148,23 +148,21 @@ class PlayerTracker {
         const sessionKills = session.currentKills - session.startKills;
         const sessionDeaths = session.currentDeaths - session.startDeaths;
 
-        // Overall KPM: Wenn API-Daten, verwende Total-Kills, sonst Session-Kills
-        let overallKPM;
-        if (useApiData) {
-            overallKPM = playtimeMinutes > 0 ? session.currentKills / playtimeMinutes : 0;
-        } else {
-            overallKPM = playtimeMinutes > 0 ? sessionKills / playtimeMinutes : 0;
-        }
+        // Immer Session-Kills für KPM verwenden (nur aktuelles Game)
+        const overallKPM = playtimeMinutes > 0 ? sessionKills / playtimeMinutes : 0;
 
         // Rolling KPM (letzte 5 Minuten)
         const rollingKPM = session.killHistory.length / 5;
+
+        // K/D Ratio
+        const kdRatio = sessionDeaths > 0 ? (sessionKills / sessionDeaths).toFixed(2) : sessionKills.toFixed(2);
 
         return {
             steamId: session.steamId,
             playerName: session.playerName,
             serverName: session.serverName,
             level: session.level,
-            role: session.role,
+            role: session.role || 'Unknown',
             team: session.team,
             playtimeMinutes: playtimeMinutes,
             playtimeFormatted: this.formatPlaytime(playtimeMinutes),
@@ -174,8 +172,8 @@ class PlayerTracker {
             totalDeaths: session.currentDeaths,
             overallKPM: overallKPM.toFixed(2),
             rollingKPM: rollingKPM.toFixed(2),
+            kdRatio: kdRatio,
             weapons: session.weapons || {},
-            combatScore: session.combatScore || 0,
             startTime: session.startTime,
             lastUpdate: session.lastUpdate
         };
@@ -205,11 +203,11 @@ class PlayerTracker {
             return false;
         }
 
-        // KPM Checks
-        const kpmSuspicious = parseFloat(stats.overallKPM) >= config.suspiciousKPM;
-        const rollingKpmSuspicious = parseFloat(stats.rollingKPM) >= config.suspiciousKPM;
+        // Separate KPM Checks
+        const overallKpmSuspicious = parseFloat(stats.overallKPM) >= config.overallKPMThreshold;
+        const rollingKpmSuspicious = parseFloat(stats.rollingKPM) >= config.rollingKPMThreshold;
 
-        return kpmSuspicious || rollingKpmSuspicious;
+        return overallKpmSuspicious || rollingKpmSuspicious;
     }
 
     saveSession(key) {

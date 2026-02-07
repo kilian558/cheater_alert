@@ -79,11 +79,11 @@ class DiscordBot {
                 },
                 { 
                     name: '💀 Kills', 
-                    value: `\`\`\`${stats.totalKills}\`\`\``, 
+                    value: `\`\`\`${stats.sessionKills}\`\`\``, 
                     inline: true 
                 },
                 { 
-                    name: '📈 Overall KPM', 
+                    name: '📈 Session KPM', 
                     value: `\`\`\`${stats.overallKPM}\`\`\``, 
                     inline: true 
                 },
@@ -94,7 +94,12 @@ class DiscordBot {
                 },
                 { 
                     name: '☠️ Deaths', 
-                    value: `\`\`\`${stats.totalDeaths}\`\`\``, 
+                    value: `\`\`\`${stats.sessionDeaths}\`\`\``, 
+                    inline: true 
+                },
+                { 
+                    name: '🎯 K/D Ratio', 
+                    value: `\`\`\`${stats.kdRatio}\`\`\``, 
                     inline: true 
                 }
             )
@@ -118,17 +123,6 @@ class DiscordBot {
             }
         }
         
-        // Combat Score hinzufügen falls vorhanden
-        if (stats.combatScore !== undefined) {
-            embed.addFields({ 
-                name: '⚔️ Combat Score', 
-                value: `\`\`\`${stats.combatScore}\`\`\``, 
-                inline: true 
-            });
-        }
-
-        return embed;
-    }
 
     createActionButtons(steamId, serverName) {
         const row = new ActionRowBuilder()

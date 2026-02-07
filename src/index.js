@@ -10,7 +10,9 @@ class HLLAntiCheatMonitor {
             maxLevelToTrack: parseInt(process.env.MAX_LEVEL_TO_TRACK) || 100,
             minKillsToTrigger: parseInt(process.env.MIN_KILLS_TO_TRIGGER) || 25,
             minPlaytimeMinutes: parseInt(process.env.MIN_PLAYTIME_MINUTES) || 15,
-            suspiciousKPM: parseFloat(process.env.SUSPICIOUS_KPM_THRESHOLD) || 2.5,
+            // Separate KPM Schwellenwerte
+            overallKPMThreshold: parseFloat(process.env.OVERALL_KPM_THRESHOLD) || 1.25,
+            rollingKPMThreshold: parseFloat(process.env.ROLLING_KPM_THRESHOLD) || 3.0,
             suspiciousKPMNoVehicles: parseFloat(process.env.SUSPICIOUS_KPM_NO_VEHICLES) || 2.0,
             checkInterval: parseInt(process.env.CHECK_INTERVAL) || 30,
             // Level Check mit Cache
@@ -117,7 +119,8 @@ class HLLAntiCheatMonitor {
         console.log(`Level-Check aktiviert: ${this.config.enableLevelCheck} (Cache: ${this.config.levelCacheDuration}min)`);
         console.log(`Rollen-Filter: Tank=${this.config.excludeTankRoles}, Artillerie=${this.config.excludeArtilleryRoles}`);
         console.log(`Ausgeschlossene Rollen: ${this.config.excludedRoles.join(', ')}`);
-        console.log(`Verdächtige KPM: ${this.config.suspiciousKPM}`);
+        console.log(`Verdächtige Session KPM: ${this.config.overallKPMThreshold}`);
+        console.log(`Verdächtige Rolling KPM (5min): ${this.config.rollingKPMThreshold}`);
         console.log('');
 
         // Discord Bot starten
@@ -198,9 +201,14 @@ class HLLAntiCheatMonitor {
         const server = this.servers.find(s => s.name === serverName);
         if (!server) return;
 
+        // Hole Spieler-Role vom Team View
+        const role = await server.getPlayerRole(playerData.steamId);
+        if (role) {
+            playerData.role = role; // Setze die echte Role
+        }
+
         // 1. ROLLEN-FILTER: Prüfe ob Spieler ausgeschlossene Rolle hat
         if (this.config.excludeTankRoles || this.config.excludeArtilleryRoles) {
-            const role = await server.getPlayerRole(playerData.steamId);
             if (role) {
                 const roleLower = role.toLowerCase();
                 const isExcluded = this.config.excludedRoles.some(excludedRole => 
@@ -208,7 +216,7 @@ class HLLAntiCheatMonitor {
                 );
                 
                 if (isExcluded) {
-                    // console.log(`  🚫 ${playerData.name} spielt ${role} - überspringe`);
+                    console.log(`  🚫 ${playerData.name} spielt ${role} - überspringe`);
                     return;
                 }
             }
@@ -253,10 +261,11 @@ class HLLAntiCheatMonitor {
         const kpmValue = parseFloat(stats.overallKPM);
         const rollingKpmValue = parseFloat(stats.rollingKPM);
         
-        console.log(`  🔍 ${stats.playerName} (Lvl ${stats.level}):`);
+        console.log(`  🔍 ${stats.playerName} (Lvl ${stats.level})`);
         console.log(`     Spielzeit: ${stats.playtimeFormatted} | SessionKills: ${stats.sessionKills}`);
-        console.log(`     KPM: ${stats.overallKPM} | Rolling: ${stats.rollingKPM} | Schwelle: ${this.config.suspiciousKPM}`);
-        console.log(`     Genug Daten: ${hasEnoughData ? '✅' : '❌'} | Verdächtig: ${kpmValue >= this.config.suspiciousKPM || rollingKpmValue >= this.config.suspiciousKPM ? '✅' : '❌'}`);
+        console.log(`     KPM: ${stats.overallKPM} (Schwelle: ${this.config.overallKPMThreshold}) | Rolling: ${stats.rollingKPM} (Schwelle: ${this.config.rollingKPMThreshold})`);
+        console.log(`     Genug Daten: ${hasEnoughData ? '✅' : '❌'} | Verdächtig: ${kpmValue >= this.config.overallKPMThreshold || rollingKpmValue >= this.config.rollingKPMThreshold ? '✅' : '❌'}`);
+        console.log(`     Role: ${stats.role || 'Unknown'}`);
 
         // Prüfe ob verdächtig
         if (this.tracker.isSuspicious(key, this.config)) {
@@ -274,9 +283,10 @@ class HLLAntiCheatMonitor {
                 console.log(`\n🚨🚨🚨 VERDÄCHTIGER SPIELER ERKANNT! 🚨🚨🚨`);
                 console.log(`   Name: ${stats.playerName} (${stats.steamId})`);
                 console.log(`   Server: ${serverName}`);
-                console.log(`   KPM: ${stats.overallKPM} | Rolling KPM: ${stats.rollingKPM}`);
-                console.log(`   Level: ${stats.level} | Total Kills: ${stats.totalKills}`);
-                console.log(`   Spielzeit: ${stats.playtimeFormatted}`);
+                console.log(`   Session KPM: ${stats.overallKPM} (Schwelle: ${this.config.overallKPMThreshold})`);
+                console.log(`   Rolling KPM: ${stats.rollingKPM} (Schwelle: ${this.config.rollingKPMThreshold})`);
+                console.log(`   Level: ${stats.level} | Session Kills: ${stats.sessionKills} | K/D: ${stats.kdRatio}`);
+                console.log(`   Spielzeit: ${stats.playtimeFormatted} | Role: ${stats.role}`);
                 console.log(`   Grund: ${!reportData ? 'Erste Meldung' : reportData.lastAlertDate !== today ? 'Neuer Tag' : 'Neue Map'}`);
                 console.log(`🚨🚨🚨 Discord Alert wird gesendet! 🚨🚨🚨\n`);
                 
