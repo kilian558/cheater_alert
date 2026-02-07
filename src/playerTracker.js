@@ -238,6 +238,29 @@ class PlayerTracker {
         stmt.run(sessionId, channelId, messageId);
     }
 
+    resetServerSessions(serverName) {
+        const now = Date.now();
+        let resetCount = 0;
+        
+        for (const [key, session] of this.trackedPlayers.entries()) {
+            if (session.serverName === serverName) {
+                // Setze Session zurück (neues Match)
+                session.startTime = now;
+                session.lastUpdate = now;
+                session.startKills = session.currentKills;
+                session.startDeaths = session.currentDeaths;
+                session.killHistory = []; // Leere Kill-History
+                resetCount++;
+            }
+        }
+        
+        if (resetCount > 0) {
+            console.log(`  🔄 ${resetCount} Session(s) für ${serverName} zurückgesetzt (neues Match)`);
+        }
+        
+        return resetCount;
+    }
+
     getDiscordMessage(sessionId) {
         const stmt = this.db.prepare(`
             SELECT * FROM discord_messages 

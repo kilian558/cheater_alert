@@ -204,6 +204,9 @@ class HLLAntiCheatMonitor {
                         }
                     }
                     keysToRemove.forEach(key => this.falsePositivePlayers.delete(key));
+                    
+                    // Reset alle Sessions für diesen Server (neues Match = neue Spielzeit)
+                    this.tracker.resetServerSessions(server.name);
                 }
                 
                 this.gameStates.set(server.name, gameState);
