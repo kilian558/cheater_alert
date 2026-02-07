@@ -108,6 +108,11 @@ class PlayerTracker {
         session.role = playerData.role;
         session.team = playerData.team;
         
+        // CRCON v11+: Verwende playtime vom API wenn verfügbar (in Sekunden)
+        if (playerData.playtime && playerData.playtime > 0) {
+            session.apiPlaytimeSeconds = playerData.playtime;
+        }
+        
         // Update weapons data from CRCON
         if (playerData.weapons && Object.keys(playerData.weapons).length > 0) {
             session.weapons = playerData.weapons;
@@ -126,13 +131,30 @@ class PlayerTracker {
         if (!session) return null;
 
         const now = Date.now();
-        const playtimeMs = now - session.startTime;
-        const playtimeMinutes = playtimeMs / (1000 * 60);
+        
+        // CRCON v11+: Verwende API playtime wenn verfügbar, sonst Session-Zeit
+        let playtimeMinutes;
+        let useApiData = false;
+        if (session.apiPlaytimeSeconds && session.apiPlaytimeSeconds > 0) {
+            // Verwende API-Spielzeit (in Sekunden -> Minuten)
+            playtimeMinutes = session.apiPlaytimeSeconds / 60;
+            useApiData = true;
+        } else {
+            // Fallback: Berechne Session-Zeit seit Bot-Start
+            const playtimeMs = now - session.startTime;
+            playtimeMinutes = playtimeMs / (1000 * 60);
+        }
+        
         const sessionKills = session.currentKills - session.startKills;
         const sessionDeaths = session.currentDeaths - session.startDeaths;
 
-        // Overall KPM
-        const overallKPM = playtimeMinutes > 0 ? sessionKills / playtimeMinutes : 0;
+        // Overall KPM: Wenn API-Daten, verwende Total-Kills, sonst Session-Kills
+        let overallKPM;
+        if (useApiData) {
+            overallKPM = playtimeMinutes > 0 ? session.currentKills / playtimeMinutes : 0;
+        } else {
+            overallKPM = playtimeMinutes > 0 ? sessionKills / playtimeMinutes : 0;
+        }
 
         // Rolling KPM (letzte 5 Minuten)
         const rollingKPM = session.killHistory.length / 5;

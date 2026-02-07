@@ -113,14 +113,17 @@ class CRCONApiClient {
                 role: player.role || player.unit_name || 'Unknown',
                 kills: parseInt(player.kills) || 0,
                 deaths: parseInt(player.deaths) || 0,
+                // CRCON v11+ hat kein level Feld mehr, verwende 0 als Fallback
                 level: parseInt(player.level) || 0,
+                // Spielzeit in Sekunden (CRCON v11+: time_seconds)
+                playtime: parseInt(player.time_seconds) || 0,
                 // Additional CRCON data
                 combat: player.combat || 0,
                 offense: player.offense || 0,
                 defense: player.defense || 0,
                 support: player.support || 0,
                 killsPerMinute: player.kills_per_minute || 0,
-                killStreak: player.kill_streak || 0,
+                killStreak: player.kills_streak || player.kill_streak || 0,
                 longestKillStreak: player.longest_kill_streak || 0,
                 weapons: player.weapons || player.weapon || {}
             }));
