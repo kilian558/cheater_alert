@@ -6,6 +6,13 @@ class CRCONApiClient {
         this.apiUrl = apiUrl.replace(/\/$/, ''); // Remove trailing slash
         this.apiToken = apiToken;
         this.connected = false;
+        
+        // Cache für Team View (Rollen-Informationen)
+        this.teamViewCache = null;
+        this.teamViewCacheTime = 0;
+        
+        // Cache für Spieler-Level (reduce API load)
+        this.levelCache = new Map(); // steamId -> { level, timestamp }
     }
 
     async connect() {
@@ -144,6 +151,113 @@ class CRCONApiClient {
         }
     }
 
+    /**
+     * Hole Level eines Spielers mit Caching (reduce API load)
+     * @param {string} steamId - Steam ID des Spielers
+     * @param {number} cacheDurationMinutes - Cache-Dauer in Minuten (default: 30)
+     * @returns {Promise<number>} - Spieler-Level oder 0 falls nicht verfügbar
+     */
+    async getPlayerLevel(steamId, cacheDurationMinutes = 30) {
+        const now = Date.now();
+        const cached = this.levelCache.get(steamId);
+        
+        // Prüfe Cache
+        if (cached && now - cached.timestamp < cacheDurationMinutes * 60 * 1000) {
+            return cached.level;
+        }
+        
+        // Hole von API
+        try {
+            const detailedInfo = await this.getDetailedPlayer(steamId);
+            const level = detailedInfo?.level || 0;
+            
+            // Speichere im Cache
+            this.levelCache.set(steamId, { level, timestamp: now });
+            
+            return level;
+        } catch (error) {
+            console.error(`[${this.name}] Fehler beim Abrufen von Level für ${steamId}:`, error.message);
+            return 0;
+        }
+    }
+
+    /**
+     * Hole Team View (Squad-Struktur mit Rollen) mit Caching
+     * @param {number} cacheDurationSeconds - Cache-Dauer in Sekunden (default: 25)
+     * @returns {Promise<object|null>} - Team view data oder null
+     */
+    async getTeamView(cacheDurationSeconds = 25) {
+        const now = Date.now();
+        
+        // Prüfe Cache
+        if (this.teamViewCache && now - this.teamViewCacheTime < cacheDurationSeconds * 1000) {
+            return this.teamViewCache;
+        }
+        
+        // Hole von API
+        try {
+            const teamView = await this.request('/api/get_team_view', 'GET');
+            
+            // Speichere im Cache
+            this.teamViewCache = teamView;
+            this.teamViewCacheTime = now;
+            
+            return teamView;
+        } catch (error) {
+            console.error(`[${this.name}] Fehler beim Abrufen von Team View:`, error.message);
+            return null;
+        }
+    }
+
+    /**
+     * Hole Rolle eines Spielers aus Team View
+     * @param {string} steamId - Steam ID des Spielers
+     * @returns {Promise<string|null>} - Rolle oder null
+     */
+    async getPlayerRole(steamId) {
+        const teamView = await this.getTeamView();
+        if (!teamView) return null;
+        
+        // Suche Spieler in allen Teams und Squads
+        for (const teamName of ['allies', 'axis']) {
+            const team = teamView[teamName];
+            if (!team || !team.squads) continue;
+            
+            // Prüfe Commander
+            if (team.commander && team.commander.player_id === steamId) {
+                return team.commander.role || null;
+            }
+            
+            // Prüfe alle Squads
+            for (const squad of Object.values(team.squads)) {
+                if (!squad.players) continue;
+                
+                const player = squad.players.find(p => p.player_id === steamId);
+                if (player) {
+                    return player.role || null;
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Cleane alte Cache-Einträge
+     */
+    clearOldCache() {
+        const now = Date.now();
+        const maxAge = 60 * 60 * 1000; // 1 Stunde
+        
+        for (const [steamId, data] of this.levelCache.entries()) {
+            if (now - data.timestamp > maxAge) {
+                this.levelCache.delete(steamId);
+            }
+        }
+        
+        console.log(`[${this.name}] Cache bereinigt. ${this.levelCache.size} Einträge verbleibend`);
+    }
+
     async getGameState() {
         try {
             const state = await this.request('/api/get_gamestate', 'GET');
@@ -252,6 +366,12 @@ class CRCONApiClient {
     disconnect() {
         this.connected = false;
         this.sessionId = null;
+        
+        // Cleane Cache
+        this.teamViewCache = null;
+        this.teamViewCacheTime = 0;
+        this.levelCache.clear();
+        
         console.log(`[${this.name}] CRCON API getrennt`);
     }
 }

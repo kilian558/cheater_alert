@@ -6,6 +6,8 @@ module.exports = {
     autorestart: true,
     watch: false,
     max_memory_restart: '500M',
+    // Täglicher Restart um 4:30 Uhr (Cache clearen)
+    cron_restart: '30 4 * * *',
     env: {
       NODE_ENV: 'production'
     },

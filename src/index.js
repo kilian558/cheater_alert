@@ -12,7 +12,18 @@ class HLLAntiCheatMonitor {
             minPlaytimeMinutes: parseInt(process.env.MIN_PLAYTIME_MINUTES) || 15,
             suspiciousKPM: parseFloat(process.env.SUSPICIOUS_KPM_THRESHOLD) || 2.5,
             suspiciousKPMNoVehicles: parseFloat(process.env.SUSPICIOUS_KPM_NO_VEHICLES) || 2.0,
-            checkInterval: parseInt(process.env.CHECK_INTERVAL) || 30
+            checkInterval: parseInt(process.env.CHECK_INTERVAL) || 30,
+            // Level Check mit Cache
+            enableLevelCheck: process.env.ENABLE_LEVEL_CHECK !== 'false',
+            levelCacheDuration: parseInt(process.env.LEVEL_CACHE_DURATION_MINUTES) || 30,
+            // Rollen-Filter
+            excludeTankRoles: process.env.EXCLUDE_TANK_ROLES !== 'false',
+            excludeArtilleryRoles: process.env.EXCLUDE_ARTILLERY_ROLES !== 'false',
+            excludedRoles: (process.env.EXCLUDED_ROLES || 'tankcommander,crewman,spotter')
+                .split(',')
+                .map(r => r.trim().toLowerCase())
+                .filter(r => r.length > 0),
+            roleCacheDuration: parseInt(process.env.ROLE_CACHE_DURATION_SECONDS) || 25
         };
 
         // RCON Clients initialisieren
@@ -103,6 +114,9 @@ class HLLAntiCheatMonitor {
         console.log(`Überwache ${this.servers.length} Server(s)`);
         console.log(`Check Interval: ${this.config.checkInterval} Sekunden`);
         console.log(`Max Level zu tracken: ${this.config.maxLevelToTrack}`);
+        console.log(`Level-Check aktiviert: ${this.config.enableLevelCheck} (Cache: ${this.config.levelCacheDuration}min)`);
+        console.log(`Rollen-Filter: Tank=${this.config.excludeTankRoles}, Artillerie=${this.config.excludeArtilleryRoles}`);
+        console.log(`Ausgeschlossene Rollen: ${this.config.excludedRoles.join(', ')}`);
         console.log(`Verdächtige KPM: ${this.config.suspiciousKPM}`);
         console.log('');
 
@@ -181,9 +195,42 @@ class HLLAntiCheatMonitor {
     }
 
     async checkPlayer(playerData, serverName, gameState) {
-        // Ignoriere Spieler über dem Level-Limit
-        if (playerData.level > this.config.maxLevelToTrack) {
-            return;
+        const server = this.servers.find(s => s.name === serverName);
+        if (!server) return;
+
+        // 1. ROLLEN-FILTER: Prüfe ob Spieler ausgeschlossene Rolle hat
+        if (this.config.excludeTankRoles || this.config.excludeArtilleryRoles) {
+            const role = await server.getPlayerRole(playerData.steamId);
+            if (role) {
+                const roleLower = role.toLowerCase();
+                const isExcluded = this.config.excludedRoles.some(excludedRole => 
+                    roleLower.includes(excludedRole)
+                );
+                
+                if (isExcluded) {
+                    // console.log(`  🚫 ${playerData.name} spielt ${role} - überspringe`);
+                    return;
+                }
+            }
+        }
+
+        // 2. LEVEL-FILTER: Prüfe Level mit API Call + Cache
+        let actualLevel = playerData.level; // Fallback auf Scoreboard-Level (meist 0)
+        
+        if (this.config.enableLevelCheck && this.config.maxLevelToTrack > 0) {
+            actualLevel = await server.getPlayerLevel(
+                playerData.steamId, 
+                this.config.levelCacheDuration
+            );
+            
+            // Ignoriere Spieler über dem Level-Limit
+            if (actualLevel > this.config.maxLevelToTrack) {
+                // console.log(`  🚫 ${playerData.name} ist Level ${actualLevel} - überspringe`);
+                return;
+            }
+            
+            // Update playerData mit echtem Level
+            playerData.level = actualLevel;
         }
 
         const key = `${playerData.steamId}_${serverName}`;

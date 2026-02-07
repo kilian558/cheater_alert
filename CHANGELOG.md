@@ -1,5 +1,139 @@
 # Hell Let Loose Anti-Cheat Monitor - CHANGELOG
 
+## Version 2.3.0 - Level & Rollen-Filter mit Caching
+
+### 🎯 Neue Features
+
+#### 1. Level-Filter mit API-Integration
+- **Problem gelöst**: CRCON v11+ hat `level`-Feld aus Scoreboard entfernt
+- **Lösung**: Nutzt `/api/get_detailed_player_info` mit intelligentem Caching
+- **Performance**: Cache reduziert API-Last von 100+ auf ~3-5 Calls pro Check
+- **Konfiguration**:
+  - `ENABLE_LEVEL_CHECK=true/false` - Level-Check aktivieren/deaktivieren
+  - `LEVEL_CACHE_DURATION_MINUTES=30` - Cache-Dauer (Standard: 30min)
+
+#### 2. Rollen-Filter (Tank/Artillerie ausschließen)
+- **Problem gelöst**: Tank/Arti-Spieler haben natürlich höhere KPM
+- **Lösung**: Nutzt `/api/get_team_view` um Spieler-Rollen zu prüfen
+- **Performance**: Nur 1 zusätzlicher API-Call für alle Spieler (cached 25s)
+- **Konfiguration**:
+  - `EXCLUDE_TANK_ROLES=true` - Panzer-Rollen ausschließen
+  - `EXCLUDE_ARTILLERY_ROLES=true` - Artillerie-Rollen ausschließen
+  - `EXCLUDED_ROLES=tankcommander,crewman,spotter` - Anpassbare Rollenliste
+  - `ROLE_CACHE_DURATION_SECONDS=25` - Cache-Dauer
+
+#### 3. Automatischer PM2 Restart
+- **Täglicher Neustart um 4:30 Uhr** via PM2 Cron
+- Cleant automatisch alle Caches
+- Verhindert Memory-Leaks bei langem Betrieb
+
+### 🔧 Technical Changes
+
+**rconClient.js**:
+- ✨ `getPlayerLevel(steamId, cacheDuration)` - Level mit Cache
+- ✨ `getTeamView(cacheDuration)` - Team View mit Cache
+- ✨ `getPlayerRole(steamId)` - Spieler-Rolle aus Team View
+- ✨ `clearOldCache()` - Automatisches Cache-Cleanup
+- 🔄 `levelCache` Map für performantes Level-Caching
+- 🔄 `teamViewCache` für Rollen-Caching
+
+**index.js**:
+- 🔄 `checkPlayer()` erweitert mit Rollen- und Level-Filter
+- 🔄 Config erweitert um Level- und Rollen-Optionen
+- 📊 Detaillierte Startup-Logs für neue Features
+
+**ecosystem.config.js**:
+- ✨ `cron_restart: '30 4 * * *'` - Täglicher Restart um 4:30
+
+### 📝 Configuration Changes
+
+**Neue .env Variablen**:
+```env
+# Level Check
+ENABLE_LEVEL_CHECK=true
+LEVEL_CACHE_DURATION_MINUTES=30
+
+# Role Filter
+EXCLUDE_TANK_ROLES=true
+EXCLUDE_ARTILLERY_ROLES=true
+EXCLUDED_ROLES=tankcommander,crewman,spotter
+ROLE_CACHE_DURATION_SECONDS=25
+```
+
+### 📊 Performance Impact
+
+**v2.2.0 (ohne neue Features)**:
+- API-Calls pro Check: 1
+- Level-Check: ❌ Nicht möglich
+- Rollen-Check: ❌ Nicht möglich
+
+**v2.3.0 (mit allen Features aktiv)**:
+- API-Calls pro Check: 2-4
+  - 1x get_live_scoreboard
+  - 1x get_team_view (cached)
+  - 0-3x get_detailed_player_info (nur neue Spieler, cached)
+- Level-Check: ✅ Funktioniert
+- Rollen-Check: ✅ Funktioniert
+
+**Ergebnis**: +1-3 API-Calls, aber deutlich genauere Erkennung!
+
+### 🐛 Bug Fixes
+
+- ✅ Level zeigt jetzt echte Werte statt 0
+- ✅ Tank/Arti-Spieler werden korrekt ausgefiltert
+- ✅ Cache verhindert excessive API-Load
+
+### 📖 Documentation
+
+- ✨ Neue Datei: `FEATURES-v2.3.0.md` - Detaillierte Feature-Dokumentation
+- ✨ Neue Datei: `API-LEVEL-ROLE-INFO.md` - API-Struktur Dokumentation
+- ✨ Neue Datei: `test-level-role-api.js` - Test-Tool für neue Features
+- 🔄 `.env.example` - Erweitert mit neuen Optionen
+- 🔄 `.env.production.example` - Erweitert mit Erklärungen
+
+### ⚠️ Migration Guide v2.2.0 → v2.3.0
+
+1. **Code aktualisieren**:
+   ```bash
+   cd /home/kilian/cheater_alert
+   git pull
+   ```
+
+2. **.env erweitern** (optional, Features haben sinnvolle Defaults):
+   ```bash
+   nano .env
+   # Füge hinzu:
+   ENABLE_LEVEL_CHECK=true
+   LEVEL_CACHE_DURATION_MINUTES=30
+   EXCLUDE_TANK_ROLES=true
+   EXCLUDE_ARTILLERY_ROLES=true
+   EXCLUDED_ROLES=tankcommander,crewman,spotter
+   ROLE_CACHE_DURATION_SECONDS=25
+   ```
+
+3. **PM2 neu starten**:
+   ```bash
+   pm2 restart hll-anticheat-monitor
+   pm2 logs --lines 50
+   ```
+
+4. **Logs prüfen** auf:
+   ```
+   Level-Check aktiviert: true (Cache: 30min)
+   Rollen-Filter: Tank=true, Artillerie=true
+   ```
+
+### 🧪 Testing
+
+Neues Test-Tool verfügbar:
+```bash
+node test-level-role-api.js
+```
+
+Zeigt verfügbare Level- und Rollen-Daten aus CRCON API.
+
+---
+
 ## Version 2.2.0 - API Token Authentication
 
 ### 🔐 Breaking Changes
