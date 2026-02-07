@@ -98,9 +98,12 @@ async function testServer({ name, apiUrl, apiToken }) {
     try {
         // 1. Hole aktuelle Spieler-Liste
         log('\n🔍 Schritt 1: Hole Spieler-Liste...', 'yellow');
-        const players = await makeRequest(apiUrl, '/api/get_players', apiToken);
+        const response = await makeRequest(apiUrl, '/api/get_players', apiToken);
         
-        if (!players || players.length === 0) {
+        // CRCON API gibt Objekt zurück: { result: [...], failed: false }
+        const players = response.result || response;
+        
+        if (!players || !Array.isArray(players) || players.length === 0) {
             log('   ⚠️  Keine Spieler online', 'yellow');
             return;
         }
@@ -122,11 +125,14 @@ async function testServer({ name, apiUrl, apiToken }) {
             log(`      Steam ID: ${playerId}`, 'blue');
 
             try {
-                const detailedInfo = await makeRequest(
+                const response = await makeRequest(
                     apiUrl, 
                     `/api/get_detailed_player_info?player_id=${playerId}`, 
                     apiToken
                 );
+                
+                // CRCON API gibt Objekt zurück: { result: {...}, failed: false }
+                const detailedInfo = response.result || response;
 
                 // Zeige vollständige Struktur des ersten Spielers
                 if (testPlayers.indexOf(player) === 0) {
@@ -184,7 +190,10 @@ async function testServer({ name, apiUrl, apiToken }) {
         log('\n🔍 Schritt 3: Teste get_team_view (Rollen-Informationen)...', 'yellow');
         
         try {
-            const teamView = await makeRequest(apiUrl, '/api/get_team_view', apiToken);
+            const response = await makeRequest(apiUrl, '/api/get_team_view', apiToken);
+            
+            // CRCON API gibt Objekt zurück: { result: {...}, failed: false }
+            const teamView = response.result || response;
 
             log('\n   📦 Team View Struktur (Ausschnitt):', 'cyan');
             const preview = JSON.stringify(teamView, null, 2).split('\n').slice(0, 50);
