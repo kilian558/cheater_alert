@@ -20,7 +20,7 @@ class DiscordBot {
     }
 
     setupEventHandlers() {
-        this.client.once('ready', () => {
+        this.client.once('clientReady', () => {
             console.log(`Discord Bot eingeloggt als ${this.client.user.tag}`);
         });
 
@@ -123,6 +123,8 @@ class DiscordBot {
             }
         }
         
+        return embed;
+    }
 
     createActionButtons(steamId, serverName) {
         const row = new ActionRowBuilder()
