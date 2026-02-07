@@ -196,9 +196,15 @@ class HLLAntiCheatMonitor {
                     console.log(`[${server.name}] 🔄 Map-Wechsel erkannt: ${previousGameState.map} → ${gameState.map}`);
                     console.log(`[${server.name}] 🗑️ False Positive Liste für diesen Server zurückgesetzt`);
                     
-                    // Update alle aktiven Alerts mit "Match beendet" Status
+                    // Update alle aktiven Alerts mit "Match beendet" Status (außer False Positives)
                     for (const [key, reportData] of this.reportedPlayers.entries()) {
                         if (key.endsWith(`_${server.name}`) && reportData.matchId === previousGameState.mapId) {
+                            // Überspringe False Positive markierte Spieler
+                            if (this.falsePositivePlayers.has(key)) {
+                                console.log(`  ⏩ ${key} ist False Positive - kein finales Update`);
+                                continue;
+                            }
+                            
                             const stats = this.tracker.getPlayerStats(key);
                             if (stats) {
                                 console.log(`  📢 Finales Update für ${stats.playerName} - Match beendet`);

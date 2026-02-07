@@ -1,5 +1,22 @@
 # Hell Let Loose Anti-Cheat Monitor - CHANGELOG
 
+## Version 2.5.1 - Hotfix: False Positive bei Match-Ende
+
+### 🐛 Bug Fix
+
+#### False Positive Embeds werden nicht mehr bei Match-Ende überschrieben
+- **Problem**: Bei Map-Wechsel wurden ALLE aktiven Embeds mit "Match beendet" geupdatet
+- **Symptom**: Auch False-Positive-markierte Spieler bekamen finales Update
+- **Fix**: Finales Match-End Update prüft jetzt `falsePositivePlayers` Set
+- **Verhalten**: False Positive Spieler werden komplett übersprungen
+
+### 🔧 Technical Changes
+
+- `index.js`: Map-Wechsel-Handler prüft `this.falsePositivePlayers.has(key)` vor finalem Update
+- Console-Log: "⏩ {key} ist False Positive - kein finales Update"
+
+---
+
 ## Version 2.5.0 - Artillery Filter & Match End Notification
 
 ### 🎯 Neue Features
