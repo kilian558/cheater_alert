@@ -1,5 +1,22 @@
 # Hell Let Loose Anti-Cheat Monitor - CHANGELOG
 
+## Version 2.5.2 - Spotter nicht mehr ausgeschlossen
+
+### 🎯 Änderung
+
+#### Spotter wird jetzt getrackt
+- **Vorher**: Spotter war in EXCLUDED_ROLES (zusammen mit Tank/Artillery)
+- **Nachher**: Spotter wird NICHT mehr gefiltert
+- **Grund**: Spotter (Recon Squad) kann verdächtige KPM haben, sollte überwacht werden
+- **Gefiltert bleiben**: tankcommander, crewman, artillery
+
+### 🔧 Technical Changes
+
+- `index.js`: EXCLUDED_ROLES default entfernt "spotter"
+- `.env.example`: Dokumentation aktualisiert - Spotter explizit als nicht gefiltert markiert
+
+---
+
 ## Version 2.5.1 - Hotfix: False Positive bei Match-Ende
 
 ### 🐛 Bug Fix

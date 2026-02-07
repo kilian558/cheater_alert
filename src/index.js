@@ -21,7 +21,7 @@ class HLLAntiCheatMonitor {
             // Rollen-Filter
             excludeTankRoles: process.env.EXCLUDE_TANK_ROLES !== 'false',
             excludeArtilleryRoles: process.env.EXCLUDE_ARTILLERY_ROLES !== 'false',
-            excludedRoles: (process.env.EXCLUDED_ROLES || 'tankcommander,crewman,spotter,artillery')
+            excludedRoles: (process.env.EXCLUDED_ROLES || 'tankcommander,crewman,artillery')
                 .split(',')
                 .map(r => r.trim().toLowerCase())
                 .filter(r => r.length > 0),
