@@ -158,6 +158,7 @@ class HLLAntiCheatMonitor {
 
         // Hole Spieler-Daten
         const players = await server.getPlayers();
+        console.log(`\n[${server.name}] ${players.length} Spieler online`);
         
         // Hole Game State (Map, Mode, etc.)
         let gameState = this.gameStates.get(server.name);
@@ -165,6 +166,7 @@ class HLLAntiCheatMonitor {
             gameState = await server.getGameState();
             if (gameState) {
                 this.gameStates.set(server.name, gameState);
+                console.log(`[${server.name}] Map: ${gameState.map} | Modus: ${gameState.mode}`);
             }
         }
 
@@ -172,6 +174,10 @@ class HLLAntiCheatMonitor {
         for (const player of players) {
             await this.checkPlayer(player, server.name, gameState);
         }
+        
+        // Zeige Tracking-Zusammenfassung
+        const trackedCount = Array.from(this.tracker.trackedPlayers.keys()).filter(k => k.endsWith(`_${server.name}`)).length;
+        console.log(`[${server.name}] Tracking: ${trackedCount} Spieler werden überwacht`);
     }
 
     async checkPlayer(playerData, serverName, gameState) {
@@ -185,6 +191,7 @@ class HLLAntiCheatMonitor {
         // Starte Tracking falls nicht bereits gestartet
         if (!this.tracker.trackedPlayers.has(key)) {
             this.tracker.startTracking(playerData, serverName);
+            console.log(`  ➕ Neuer Spieler: ${playerData.name} (Lvl ${playerData.level}) - ${playerData.kills} Kills`);
         }
 
         // Update Spieler-Daten
@@ -194,13 +201,27 @@ class HLLAntiCheatMonitor {
         const stats = this.tracker.getPlayerStats(key);
         if (!stats) return;
 
+        // Debug-Logging für jeden Spieler
+        const hasEnoughData = stats.playtimeMinutes >= this.config.minPlaytimeMinutes || stats.sessionKills >= this.config.minKillsToTrigger;
+        const kpmValue = parseFloat(stats.overallKPM);
+        const rollingKpmValue = parseFloat(stats.rollingKPM);
+        
+        console.log(`  🔍 ${stats.playerName} (Lvl ${stats.level}):`);
+        console.log(`     Spielzeit: ${stats.playtimeFormatted} | SessionKills: ${stats.sessionKills}`);
+        console.log(`     KPM: ${stats.overallKPM} | Rolling: ${stats.rollingKPM} | Schwelle: ${this.config.suspiciousKPM}`);
+        console.log(`     Genug Daten: ${hasEnoughData ? '✅' : '❌'} | Verdächtig: ${kpmValue >= this.config.suspiciousKPM || rollingKpmValue >= this.config.suspiciousKPM ? '✅' : '❌'}`);
+
         // Prüfe ob verdächtig
         if (this.tracker.isSuspicious(key, this.config)) {
             // Wenn noch nicht gemeldet, sende neue Meldung
             if (!this.reportedPlayers.has(key)) {
-                console.log(`🚨 VERDÄCHTIGER SPIELER: ${stats.playerName} (${stats.steamId})`);
+                console.log(`\n🚨🚨🚨 VERDÄCHTIGER SPIELER ERKANNT! 🚨🚨🚨`);
+                console.log(`   Name: ${stats.playerName} (${stats.steamId})`);
+                console.log(`   Server: ${serverName}`);
                 console.log(`   KPM: ${stats.overallKPM} | Rolling KPM: ${stats.rollingKPM}`);
-                console.log(`   Level: ${stats.level} | Kills: ${stats.sessionKills}`);
+                console.log(`   Level: ${stats.level} | Session Kills: ${stats.sessionKills}`);
+                console.log(`   Spielzeit: ${stats.playtimeFormatted}`);
+                console.log(`🚨🚨🚨 Discord Alert wird gesendet! 🚨🚨🚨\n`);
                 
                 await this.discord.sendSuspiciousPlayerAlert(key, stats, gameState || { map: 'Unknown', mode: 'Warfare' });
                 this.reportedPlayers.add(key);

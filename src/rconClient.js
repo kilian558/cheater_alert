@@ -76,18 +76,41 @@ class CRCONApiClient {
             // Use get_live_scoreboard for real-time stats
             const scoreboard = await this.request('/api/get_live_scoreboard', 'GET');
             
-            if (!scoreboard || !scoreboard.players) {
+            console.log(`[${this.name}] API Response Type:`, typeof scoreboard);
+            
+            if (!scoreboard) {
+                console.warn(`[${this.name}] Scoreboard ist null/undefined`);
                 return [];
             }
 
-            return scoreboard.players.map(player => ({
-                name: player.player || player.name || 'Unknown',
-                steamId: player.player_id || player.steam_id_64,
+            // Handle different response formats
+            let players = [];
+            if (Array.isArray(scoreboard)) {
+                players = scoreboard;
+            } else if (scoreboard.players && Array.isArray(scoreboard.players)) {
+                players = scoreboard.players;
+            } else if (scoreboard.result && Array.isArray(scoreboard.result)) {
+                players = scoreboard.result;
+            } else {
+                console.warn(`[${this.name}] Unbekanntes Scoreboard-Format:`, JSON.stringify(scoreboard).substring(0, 200));
+                return [];
+            }
+
+            console.log(`[${this.name}] ${players.length} Spieler in Scoreboard gefunden`);
+            
+            if (players.length > 0) {
+                // Debug: Zeige erstes Spieler-Objekt zur Validierung
+                console.log(`[${this.name}] Beispiel-Spieler (1):`, JSON.stringify(players[0]));
+            }
+
+            return players.map(player => ({
+                name: player.player || player.name || player.player_name || 'Unknown',
+                steamId: player.player_id || player.steam_id_64 || player.steamId || 'unknown',
                 team: player.team || 'Unknown',
-                role: player.role || 'Unknown',
-                kills: player.kills || 0,
-                deaths: player.deaths || 0,
-                level: player.level || 0,
+                role: player.role || player.unit_name || 'Unknown',
+                kills: parseInt(player.kills) || 0,
+                deaths: parseInt(player.deaths) || 0,
+                level: parseInt(player.level) || 0,
                 // Additional CRCON data
                 combat: player.combat || 0,
                 offense: player.offense || 0,
@@ -96,10 +119,11 @@ class CRCONApiClient {
                 killsPerMinute: player.kills_per_minute || 0,
                 killStreak: player.kill_streak || 0,
                 longestKillStreak: player.longest_kill_streak || 0,
-                weapons: player.weapons || {}
+                weapons: player.weapons || player.weapon || {}
             }));
         } catch (error) {
             console.error(`[${this.name}] Fehler beim Abrufen der Spieler:`, error.message);
+            console.error(`[${this.name}] Stack:`, error.stack);
             return [];
         }
     }
