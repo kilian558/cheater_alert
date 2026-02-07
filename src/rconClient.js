@@ -87,6 +87,9 @@ class CRCONApiClient {
             let players = [];
             if (Array.isArray(scoreboard)) {
                 players = scoreboard;
+            } else if (scoreboard.stats && Array.isArray(scoreboard.stats)) {
+                // CRCON v11+ uses "stats" instead of "players"
+                players = scoreboard.stats;
             } else if (scoreboard.players && Array.isArray(scoreboard.players)) {
                 players = scoreboard.players;
             } else if (scoreboard.result && Array.isArray(scoreboard.result)) {
@@ -100,7 +103,7 @@ class CRCONApiClient {
             
             if (players.length > 0) {
                 // Debug: Zeige erstes Spieler-Objekt zur Validierung
-                console.log(`[${this.name}] Beispiel-Spieler (1):`, JSON.stringify(players[0]));
+                console.log(`[${this.name}] Beispiel-Spieler (1):`, JSON.stringify(players[0]).substring(0, 300));
             }
 
             return players.map(player => ({
