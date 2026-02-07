@@ -100,22 +100,52 @@ class PlayerTracker {
             session.currentKills = playerData.kills;
             session.startDeaths = playerData.deaths;
             session.currentDeaths = playerData.deaths;
-            session.isFirstUpdate = false;
-        } else {
-            // Normale Updates: Zähle nur neue Kills
-            const newKills = playerData.kills - session.currentKills;
-
-            // Füge Timestamps für neue Kills hinzu
-            for (let i = 0; i < newKills; i++) {
-                session.killHistory.push(now);
+            // Setze auch Weapon-Baseline beim ersten Update
+            if (playerData.weapons && Object.keys(playerData.weapons).length > 0) {
+                session.weaponBaseline = { ...playerData.weapons };
+                session.weapons = {}; // Session weapons starten bei 0
             }
+            session.isFirstUpdate = false;
+            console.log(`   📊 Baseline gesetzt für ${playerData.name}: Kills=${playerData.kills}, Deaths=${playerData.deaths}`);
+        } else {
+            // Prüfe auf Stat-Reset (Team-Switch, Match-Neustart, neue Map, etc.)
+            if (playerData.kills < session.currentKills || playerData.deaths < session.currentDeaths) {
+                console.log(`   🔄 NEUE MAP/RESET erkannt für ${playerData.name} - alles auf 0 zurücksetzen`);
+                console.log(`      Alt: Kills=${session.currentKills}, Deaths=${session.currentDeaths}`);
+                console.log(`      Neu: Kills=${playerData.kills}, Deaths=${playerData.deaths}`);
+                
+                // KOMPLETTER RESET: Alles auf 0
+                session.startTime = now; // ⭐ WICHTIG: Startzeit zurücksetzen für Spielzeit
+                session.startKills = playerData.kills;
+                session.currentKills = playerData.kills;
+                session.startDeaths = playerData.deaths;
+                session.currentDeaths = playerData.deaths;
+                session.killHistory = []; // Lösche Kill-History
+                
+                // Reset Weapon-Baseline und Session-Weapons
+                if (playerData.weapons && Object.keys(playerData.weapons).length > 0) {
+                    session.weaponBaseline = { ...playerData.weapons };
+                    session.weapons = {};
+                } else {
+                    session.weaponBaseline = {};
+                    session.weapons = {};
+                }
+            } else {
+                // Normale Updates: Zähle nur neue Kills
+                const newKills = playerData.kills - session.currentKills;
 
-            // Entferne Kills älter als 5 Minuten für Rolling KPM
-            const fiveMinutesAgo = now - (5 * 60 * 1000);
-            session.killHistory = session.killHistory.filter(ts => ts > fiveMinutesAgo);
+                // Füge Timestamps für neue Kills hinzu
+                for (let i = 0; i < newKills; i++) {
+                    session.killHistory.push(now);
+                }
 
-            session.currentKills = playerData.kills;
-            session.currentDeaths = playerData.deaths;
+                // Entferne Kills älter als 5 Minuten für Rolling KPM
+                const fiveMinutesAgo = now - (5 * 60 * 1000);
+                session.killHistory = session.killHistory.filter(ts => ts > fiveMinutesAgo);
+
+                session.currentKills = playerData.kills;
+                session.currentDeaths = playerData.deaths;
+            }
         }
         session.lastUpdate = now;
         session.role = playerData.role;
@@ -126,24 +156,18 @@ class PlayerTracker {
             session.apiPlaytimeSeconds = playerData.playtime;
         }
         
-        // Weapon-Tracking: Zähle nur neue Kills pro Waffe (Session-basiert)
-        if (playerData.weapons && Object.keys(playerData.weapons).length > 0) {
-            // Initialisiere Session-Weapons wenn noch nicht vorhanden
-            if (!session.weaponBaseline) {
-                session.weaponBaseline = { ...playerData.weapons };
-                session.weapons = {}; // Session weapons starten bei 0
-            } else {
-                // Berechne Session-Kills pro Waffe
-                const sessionWeapons = {};
-                for (const [weapon, totalKills] of Object.entries(playerData.weapons)) {
-                    const baseline = session.weaponBaseline[weapon] || 0;
-                    const sessionKills = Math.max(0, totalKills - baseline);
-                    if (sessionKills > 0) {
-                        sessionWeapons[weapon] = sessionKills;
-                    }
+        // Weapon-Tracking: Berechne Session-Kills pro Waffe
+        // Baseline wird bereits im isFirstUpdate oder bei Reset gesetzt
+        if (playerData.weapons && Object.keys(playerData.weapons).length > 0 && session.weaponBaseline) {
+            const sessionWeapons = {};
+            for (const [weapon, totalKills] of Object.entries(playerData.weapons)) {
+                const baseline = session.weaponBaseline[weapon] || 0;
+                const sessionKills = Math.max(0, totalKills - baseline);
+                if (sessionKills > 0) {
+                    sessionWeapons[weapon] = sessionKills;
                 }
-                session.weapons = sessionWeapons;
             }
+            session.weapons = sessionWeapons;
         }
         
         // Store additional CRCON stats
@@ -165,9 +189,9 @@ class PlayerTracker {
         const playtimeMs = now - session.startTime;
         const playtimeMinutes = playtimeMs / (1000 * 60);
         
-        const sessionKills = session.currentKills - session.startKills;
-        // Fix: CRCON API kann inkonsistente Death-Werte liefern (Team-Switch, etc.)
-        // Verhindere negative Deaths
+        // Fix: CRCON API kann inkonsistente Kill/Death-Werte liefern (Team-Switch, Match-Reset, etc.)
+        // Verhindere negative Kills und Deaths
+        const sessionKills = Math.max(0, session.currentKills - session.startKills);
         const sessionDeaths = Math.max(0, session.currentDeaths - session.startDeaths);
 
         // Immer Session-Kills für KPM verwenden (nur aktuelles Game)
