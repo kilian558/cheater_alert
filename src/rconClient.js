@@ -86,6 +86,7 @@ class CRCONApiClient {
             const scoreboard = await this.request('/api/get_live_game_stats', 'GET');
             
             console.log(`[${this.name}] API Response Type:`, typeof scoreboard);
+            console.log(`[${this.name}] API Response Keys:`, scoreboard ? Object.keys(scoreboard).join(', ') : 'null');
             
             if (!scoreboard) {
                 console.warn(`[${this.name}] Scoreboard ist null/undefined`);
@@ -95,16 +96,23 @@ class CRCONApiClient {
             // Handle different response formats
             let players = [];
             if (Array.isArray(scoreboard)) {
+                console.log(`[${this.name}] Format: Direct Array`);
                 players = scoreboard;
+            } else if (scoreboard.player_stats && Array.isArray(scoreboard.player_stats)) {
+                // get_live_game_stats uses "player_stats"
+                console.log(`[${this.name}] Format: player_stats Array`);
+                players = scoreboard.player_stats;
             } else if (scoreboard.stats && Array.isArray(scoreboard.stats)) {
-                // CRCON v11+ uses "stats" instead of "players"
+                console.log(`[${this.name}] Format: stats Array`);
                 players = scoreboard.stats;
             } else if (scoreboard.players && Array.isArray(scoreboard.players)) {
+                console.log(`[${this.name}] Format: players Array`);
                 players = scoreboard.players;
             } else if (scoreboard.result && Array.isArray(scoreboard.result)) {
+                console.log(`[${this.name}] Format: result Array`);
                 players = scoreboard.result;
             } else {
-                console.warn(`[${this.name}] Unbekanntes Scoreboard-Format:`, JSON.stringify(scoreboard).substring(0, 200));
+                console.warn(`[${this.name}] Unbekanntes Scoreboard-Format:`, JSON.stringify(scoreboard).substring(0, 500));
                 return [];
             }
 
@@ -112,6 +120,7 @@ class CRCONApiClient {
             
             if (players.length > 0) {
                 // Debug: Zeige vollständiges erstes Spieler-Objekt zur Validierung
+                console.log(`[${this.name}] Beispiel-Spieler Keys:`, Object.keys(players[0]).join(', '));
                 console.log(`[${this.name}] Beispiel-Spieler (vollständig):`, JSON.stringify(players[0], null, 2));
             }
 
