@@ -306,12 +306,13 @@ class HLLAntiCheatMonitor {
         if (!stats) return;
 
         // Debug-Logging für jeden Spieler
-        const hasEnoughData = stats.playtimeMinutes >= this.config.minPlaytimeMinutes || stats.sessionKills >= this.config.minKillsToTrigger;
+        // Verwende totalKills (Match-Total) für CRCON-genaue Anzeige
+        const hasEnoughData = stats.playtimeMinutes >= this.config.minPlaytimeMinutes || stats.totalKills >= this.config.minKillsToTrigger;
         const kpmValue = parseFloat(stats.overallKPM);
         const rollingKpmValue = parseFloat(stats.rollingKPM);
         
         console.log(`  🔍 ${stats.playerName} (Lvl ${stats.level})`);
-        console.log(`     Spielzeit: ${stats.playtimeFormatted} | SessionKills: ${stats.sessionKills}`);
+        console.log(`     Spielzeit: ${stats.playtimeFormatted} | Match Kills: ${stats.totalKills} (Session: +${stats.sessionKills})`);
         console.log(`     KPM: ${stats.overallKPM} (Schwelle: ${this.config.overallKPMThreshold}) | Rolling: ${stats.rollingKPM} (Schwelle: ${this.config.rollingKPMThreshold})`);
         console.log(`     Genug Daten: ${hasEnoughData ? '✅' : '❌'} | Verdächtig: ${kpmValue >= this.config.overallKPMThreshold || rollingKpmValue >= this.config.rollingKPMThreshold ? '✅' : '❌'}`);
         console.log(`     Role: ${stats.role || 'Unknown'}`);
@@ -340,7 +341,7 @@ class HLLAntiCheatMonitor {
                 console.log(`   Server: ${serverName}`);
                 console.log(`   Session KPM: ${stats.overallKPM} (Schwelle: ${this.config.overallKPMThreshold})`);
                 console.log(`   Rolling KPM: ${stats.rollingKPM} (Schwelle: ${this.config.rollingKPMThreshold})`);
-                console.log(`   Level: ${stats.level} | Session Kills: ${stats.sessionKills} | K/D: ${stats.kdRatio}`);
+                console.log(`   Level: ${stats.level} | Match Kills: ${stats.totalKills} | K/D: ${stats.kdRatio}`);
                 console.log(`   Spielzeit: ${stats.playtimeFormatted} | Role: ${stats.role}`);
                 console.log(`   Grund: ${!reportData ? 'Erste Meldung' : reportData.lastAlertDate !== today ? 'Neuer Tag' : 'Neue Map'}`);
                 console.log(`🚨🚨🚨 Discord Alert wird gesendet! 🚨🚨🚨\n`);

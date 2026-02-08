@@ -193,19 +193,24 @@ class PlayerTracker {
             playtimeMinutes = playtimeMs / (1000 * 60);
         }
         
-        // Fix: CRCON API kann inkonsistente Kill/Death-Werte liefern (Team-Switch, Match-Reset, etc.)
-        // Verhindere negative Kills und Deaths
+        // get_live_game_stats liefert bereits Match-nur Stats (reset bei Match-Start)
+        // Verwende RAW Kills vom API für CRCON-genaue KPM (nicht sessionKills mit Baseline)
+        // Dies gibt uns sofort die echte Match-KPM, auch wenn Bot mid-match startet
+        const matchKills = Math.max(0, session.currentKills);
+        const matchDeaths = Math.max(0, session.currentDeaths);
+        
+        // Berechne auch Session-Kills für Anomalie-Erkennung (Kills seit Bot-Start)
         const sessionKills = Math.max(0, session.currentKills - session.startKills);
         const sessionDeaths = Math.max(0, session.currentDeaths - session.startDeaths);
 
-        // Immer Session-Kills für KPM verwenden (nur aktuelles Game)
-        const overallKPM = playtimeMinutes > 0 ? sessionKills / playtimeMinutes : 0;
+        // KPM basierend auf TOTAL Match-Kills (wie CRCON es anzeigt)
+        const overallKPM = playtimeMinutes > 0 ? matchKills / playtimeMinutes : 0;
 
         // Rolling KPM (letzte 5 Minuten)
         const rollingKPM = session.killHistory.length / 5;
 
-        // K/D Ratio
-        const kdRatio = sessionDeaths > 0 ? (sessionKills / sessionDeaths).toFixed(2) : sessionKills.toFixed(2);
+        // K/D Ratio basierend auf Match-Total (wie CRCON)
+        const kdRatio = matchDeaths > 0 ? (matchKills / matchDeaths).toFixed(2) : matchKills.toFixed(2);
 
         return {
             steamId: session.steamId,
