@@ -80,8 +80,10 @@ class CRCONApiClient {
 
     async getPlayers() {
         try {
-            // Use get_live_scoreboard for real-time stats
-            const scoreboard = await this.request('/api/get_live_scoreboard', 'GET');
+            // ⭐ WICHTIG: get_live_game_stats liefert NUR Stats für das aktuelle Match
+            // Im Gegensatz zu get_live_scoreboard (reset bei Disconnect, nicht bei Match-Start)
+            // werden hier die Stats bei jedem Map-Wechsel auf 0 zurückgesetzt
+            const scoreboard = await this.request('/api/get_live_game_stats', 'GET');
             
             console.log(`[${this.name}] API Response Type:`, typeof scoreboard);
             
