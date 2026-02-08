@@ -184,10 +184,14 @@ class PlayerTracker {
 
         const now = Date.now();
         
-        // Verwende NUR Session-Zeit (seit Bot-Start / Match-Start)
-        // NICHT API playtime - das ist die GESAMTE Serverzeit, nicht nur aktuelle Match!
-        const playtimeMs = now - session.startTime;
-        const playtimeMinutes = playtimeMs / (1000 * 60);
+        // Bevorzuge API playtime (in Sekunden) wenn verfügbar, sonst fallback auf berechnete Zeit
+        let playtimeMinutes;
+        if (session.apiPlaytimeSeconds && session.apiPlaytimeSeconds > 0) {
+            playtimeMinutes = session.apiPlaytimeSeconds / 60;
+        } else {
+            const playtimeMs = now - session.startTime;
+            playtimeMinutes = playtimeMs / (1000 * 60);
+        }
         
         // Fix: CRCON API kann inkonsistente Kill/Death-Werte liefern (Team-Switch, Match-Reset, etc.)
         // Verhindere negative Kills und Deaths
