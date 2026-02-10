@@ -186,8 +186,11 @@ class PlayerTracker {
         
         // Bevorzuge API playtime (in Sekunden) wenn verfügbar, sonst fallback auf berechnete Zeit
         let playtimeMinutes;
+        let isApiPlaytime = false;
+
         if (session.apiPlaytimeSeconds && session.apiPlaytimeSeconds > 0) {
             playtimeMinutes = session.apiPlaytimeSeconds / 60;
+            isApiPlaytime = true;
         } else {
             const playtimeMs = now - session.startTime;
             playtimeMinutes = playtimeMs / (1000 * 60);
@@ -208,8 +211,8 @@ class PlayerTracker {
         // Fall 2: Wir haben keine Playtime (Bot mid-match) -> Berechne Session-KPM (Kills seit Bot-Start / Zeit seit Bot-Start)
         let overallKPM;
 
-        if (session.apiPlaytimeSeconds && session.apiPlaytimeSeconds > 0) {
-            // Exakte Match-KPM
+        if (isApiPlaytime) {
+            // Exakte Match-KPM: Total Match Kills / Total Match Playtime
             overallKPM = playtimeMinutes > 0 ? matchKills / playtimeMinutes : 0;
         } else {
             // Fallback auf Session-KPM um inflated Values zu vermeiden (z.B. 20 Kills in 1 Minute Tracking = 20 KPM)
