@@ -175,6 +175,11 @@ class PlayerTracker {
             session.combatScore = playerData.combat;
         }
 
+        // Store API provided KPM if available
+        if (playerData.killsPerMinute !== undefined) {
+            session.apiKPM = playerData.killsPerMinute;
+        }
+
         return session;
     }
 
@@ -207,16 +212,19 @@ class PlayerTracker {
         const sessionDeaths = Math.max(0, session.currentDeaths - session.startDeaths);
 
         // KPM Berechnung (Overall/Session)
-        // Fall 1: Wir haben echte Playtime vom API (CRCON v11+) -> Berechne exakte Match-KPM
-        // Fall 2: Wir haben keine Playtime (Bot mid-match) -> Berechne Session-KPM (Kills seit Bot-Start / Zeit seit Bot-Start)
+        // Priorität 1: API KPM (wenn verfügbar)
+        // Priorität 2: Berechnete Match-KPM (wenn API Playtime verfügbar)
+        // Priorität 3: Session-KPM (Fallback wenn keine API Daten)
         let overallKPM;
 
-        if (isApiPlaytime) {
+        if (session.apiKPM !== undefined) {
+            // Verwende direkt den Wert vom RCON
+            overallKPM = session.apiKPM;
+        } else if (isApiPlaytime) {
             // Exakte Match-KPM: Total Match Kills / Total Match Playtime
             overallKPM = playtimeMinutes > 0 ? matchKills / playtimeMinutes : 0;
         } else {
-            // Fallback auf Session-KPM um inflated Values zu vermeiden (z.B. 20 Kills in 1 Minute Tracking = 20 KPM)
-            // Hier nutzen wir nur die Kills, die WÄHREND des Trackings passiert sind
+            // Fallback auf Session-KPM um inflated Values zu vermeiden
             overallKPM = playtimeMinutes > 0 ? sessionKills / playtimeMinutes : 0;
         }
 
