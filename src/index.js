@@ -314,7 +314,13 @@ class HLLAntiCheatMonitor {
         console.log(`  🔍 ${stats.playerName} (Lvl ${stats.level})`);
         console.log(`     Spielzeit: ${stats.playtimeFormatted} | Match Kills: ${stats.totalKills} (Session: +${stats.sessionKills})`);
         console.log(`     KPM: ${stats.overallKPM} (Schwelle: ${this.config.overallKPMThreshold}) | Rolling: ${stats.rollingKPM} (Schwelle: ${this.config.rollingKPMThreshold})`);
-        console.log(`     Genug Daten: ${hasEnoughData ? '✅' : '❌'} | Verdächtig: ${kpmValue >= this.config.overallKPMThreshold || rollingKpmValue >= this.config.rollingKPMThreshold ? '✅' : '❌'}`);
+        const isThresholdMet = kpmValue >= this.config.overallKPMThreshold || rollingKpmValue >= this.config.rollingKPMThreshold;
+        let suspiciousStatus = '❌';
+        if (isThresholdMet) {
+            suspiciousStatus = hasEnoughData ? '✅' : '⏳ (zu wenig Daten)';
+        }
+
+        console.log(`     Genug Daten: ${hasEnoughData ? '✅' : '❌'} | Verdächtig: ${suspiciousStatus}`);
         console.log(`     Role: ${stats.role || 'Unknown'}`);
 
         // Prüfe ob als False Positive markiert
